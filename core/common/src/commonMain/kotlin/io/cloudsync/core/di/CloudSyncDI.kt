@@ -1,24 +1,17 @@
 package io.cloudsync.core.di
 
-
-
-
-
-
-
-
-
-import io.cloudsync.storage.database.DatabaseDriverFactory
-import io.cloudsync.sync.engine.SyncEngine
-import io.cloudsync.sync.SyncOrchestrator
-import kotlinx.coroutines.CoroutineScope
+import io.cloudsync.core.InternalCloudSyncApi
 
 /**
  * Service Locator for the CloudSync Engine.
  *
  * Manages the dependency graph and lifecycle of all components.
- * Designed for integration with Koin, but framework-agnostic at this layer.
+ * Designed for integration with Koin or other DI frameworks.
+ *
+ * Note: Module-specific registrations (auth, data, sync, network)
+ * are available in their respective modules' DI configurations.
  */
+@InternalCloudSyncApi
 public object CloudSyncContainer {
 
     private val dependencies = mutableMapOf<String, Any>()
@@ -28,7 +21,7 @@ public object CloudSyncContainer {
      * Registers a dependency in the container.
      */
     public inline fun <reified T : Any> register(instance: T, name: String? = null) {
-        val key = name ?: T::class.qualifiedName ?: error("Unnamed dependency")
+        val key = name ?: T::class.qualifiedName ?: return
         dependencies[key] = instance
     }
 
@@ -36,17 +29,9 @@ public object CloudSyncContainer {
      * Resolves a dependency from the container.
      */
     @Suppress("UNCHECKED_CAST")
-    public inline fun <reified T : Any> resolve(name: String? = null): T {
-        val key = name ?: T::class.qualifiedName ?: error("Unnamed dependency")
+    public inline fun <reified T : Any> resolve(name: String? = null): T? {
+        val key = name ?: T::class.qualifiedName ?: return null
         return dependencies[key] as? T
-            ?: throw IllegalStateException("Dependency not found: $key. Ensure it's registered.")
-    }
-
-    /**
-     * Koin module factory for easy integration.
-     */
-    public fun koinModule() =  {
-        single { CloudSyncContainer }
     }
 
     internal fun reset() {
