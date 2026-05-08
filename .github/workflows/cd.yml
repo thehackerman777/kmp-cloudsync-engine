@@ -12,7 +12,7 @@ env:
 jobs:
   validate-tag:
     name: Validate Semantic Version
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     outputs:
       version: ${{ steps.parse.outputs.version }}
       major: ${{ steps.parse.outputs.major }}
@@ -41,7 +41,7 @@ jobs:
   build:
     name: Build All Targets
     needs: validate-tag
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     steps:
       - uses: actions/checkout@v4
 
@@ -85,7 +85,7 @@ jobs:
   publish:
     name: Publish Packages
     needs: [validate-tag, build]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     environment: release
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [validate-tag, build, publish]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     permissions:
       contents: write
     steps:
