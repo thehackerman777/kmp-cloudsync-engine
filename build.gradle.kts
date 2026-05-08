@@ -18,7 +18,3 @@ val dokka by tasks.registering(org.jetbrains.dokka.gradle.DokkaTask::class) {
     suppressObviousFunctions.set(true)
     suppressInheritedMembers.set(false)
 }
-
-tasks.register("clean", Delete::class) {
-    delete(rootProject.layout.buildDirectory)
-}
