@@ -38,6 +38,7 @@ kotlin {
         }
         val desktopMain by getting
     }
+}
 
 android {
     namespace = "io.cloudsync.storage"

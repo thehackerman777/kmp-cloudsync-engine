@@ -43,6 +43,7 @@ kotlin {
         val androidMain by getting
         val desktopMain by getting
     }
+}
 
 android {
     namespace = "io.cloudsync.sync"

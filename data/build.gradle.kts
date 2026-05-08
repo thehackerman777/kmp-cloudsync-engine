@@ -56,6 +56,7 @@ kotlin {
             dependencies { implementation(libs.sqldelight.native) }
         }
     }
+}
 
 android {
     namespace = "io.cloudsync.data"

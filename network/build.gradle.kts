@@ -45,6 +45,7 @@ kotlin {
             dependencies { implementation(libs.ktor.client.cio) }
         }
     }
+}
 
 android {
     namespace = "io.cloudsync.network"
