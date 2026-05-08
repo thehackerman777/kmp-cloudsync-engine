@@ -112,7 +112,7 @@ jobs:
       fail-fast: false
       matrix:
         target: [android, desktop, js]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     steps:
       - uses: actions/checkout@v4
 
@@ -155,7 +155,7 @@ jobs:
   quality-gate:
     name: Quality Gate
     needs: [lint, test, build]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, dev-vps]
     steps:
       - name: Check all quality checks passed
         run: echo "✅ All quality checks passed — ready for merge."
