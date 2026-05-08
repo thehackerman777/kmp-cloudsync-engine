@@ -1,13 +1,13 @@
 package io.cloudsync.core.di
 
-import io.cloudsync.auth.AuthManager
-import io.cloudsync.auth.token.TokenProvider
-import io.cloudsync.data.local.LocalDataSource
-import io.cloudsync.data.remote.RemoteDataSource
-import io.cloudsync.data.repository.ConfigurationRepository
-import io.cloudsync.domain.repository.IConfigurationRepository
-import io.cloudsync.domain.usecase.SyncConfigurationsUseCase
-import io.cloudsync.network.client.NetworkClientProvider
+
+
+
+
+
+
+
+
 import io.cloudsync.storage.database.DatabaseDriverFactory
 import io.cloudsync.sync.engine.SyncEngine
 import io.cloudsync.sync.SyncOrchestrator
@@ -45,7 +45,7 @@ public object CloudSyncContainer {
     /**
      * Koin module factory for easy integration.
      */
-    public fun koinModule() = org.koin.dsl.module {
+    public fun koinModule() =  {
         single { CloudSyncContainer }
     }
 

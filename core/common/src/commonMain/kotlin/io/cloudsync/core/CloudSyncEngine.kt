@@ -34,7 +34,7 @@ public expect class CloudSyncEngine private constructor() {
     /**
      * Stream of sync results for observability and telemetry.
      */
-    public val syncResults: Flow<SyncResult>
+    public val syncResults: Flow<SyncResult<Unit>>
 
     /**
      * Current sync configuration name in use.
@@ -51,7 +51,7 @@ public expect class CloudSyncEngine private constructor() {
      * Starts the sync engine. Triggers an initial sync cycle
      * and schedules background synchronization.
      */
-    public suspend fun start(): SyncResult
+    public suspend fun start(): SyncResult<Unit>
 
     /**
      * Stops all sync operations gracefully.
@@ -63,7 +63,7 @@ public expect class CloudSyncEngine private constructor() {
      * Triggers an immediate manual sync cycle.
      * Respects rate limiting and conflict resolution policies.
      */
-    public suspend fun syncNow(): SyncResult
+    public suspend fun syncNow(): SyncResult<Unit>
 
     /**
      * Resets local state and re-authenticates.

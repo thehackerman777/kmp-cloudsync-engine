@@ -38,5 +38,5 @@ public data class SyncDiagnostics(
     /** Current backoff delay in milliseconds */
     val backoffMs: Long,
     /** Sync engine version */
-    val engineVersion: String = BuildConfig.VERSION
+    val engineVersion: String = "0.1.0"
 )
