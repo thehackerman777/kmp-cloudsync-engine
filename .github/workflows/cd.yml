@@ -171,9 +171,3 @@ jobs:
             ### 📚 Documentation
             - [API Reference](https://docs.cloudsync.io)
             - [Migration Guide](docs/MIGRATION.md)
-          files: |
-            artifacts/**/*.jar
-            artifacts/**/*.aar
-          draft: ${{ contains(needs.validate-tag.outputs.pre-release, '-') }}
-          prerelease: ${{ contains(needs.validate-tag.outputs.pre-release, '-') }}
-          generate_release_notes: true

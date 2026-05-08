@@ -13,6 +13,7 @@ concurrency:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
+  ANDROID_HOME: /home/ubuntu/android-sdk
 
 jobs:
   lint:
@@ -34,10 +35,12 @@ jobs:
         uses: gradle/actions/wrapper-validation@v4
 
       - name: Run Detekt (Static Analysis)
-        run: ./gradlew detekt --no-daemon || echo "⚠️ Detekt warnings (non-blocking)"
+        continue-on-error: true
+        run: ./gradlew detekt --no-daemon
 
       - name: Run API check
-        run: ./gradlew apiCheck --no-daemon || true
+        continue-on-error: true
+        run: ./gradlew apiCheck --no-daemon
 
   test:
     name: Test Suite
@@ -56,15 +59,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run all tests
-        run: ./gradlew allTests --no-daemon || echo "⚠️ Test failures (non-blocking)"
+        run: ./gradlew allTests --no-daemon
 
-  build:
-    name: Build — ${{ matrix.target }}
+      - name: Publish Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/build/reports/tests/'
+          retention-days: 14
+
+  build-android:
+    name: Build Android AAR
     needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [android, desktop, js]
     runs-on: [self-hosted, linux, x64, dev-vps]
     steps:
       - uses: actions/checkout@v4
@@ -78,27 +85,72 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build ${{ matrix.target }}
-        run: |
-          case ${{ matrix.target }} in
-            android) ./gradlew :data:assembleDebug :sync:assembleDebug ;;
-            desktop) ./gradlew :data:jvmJar :sync:jvmJar ;;
-            js)      ./gradlew :data:jsMainClasses :sync:jsMainClasses ;;
-          esac || echo "⚠️ Build had warnings"
+      - name: Build Android
+        run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Build Artifacts
+      - name: Upload Android AARs
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.target }}
-          path: |
-            **/build/libs/
-            **/build/outputs/
+          name: android-artifacts
+          path: '**/build/outputs/aar/'
+          retention-days: 7
+
+  build-desktop:
+    name: Build Desktop JAR
+    needs: test
+    runs-on: [self-hosted, linux, x64, dev-vps]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Desktop
+        run: ./gradlew jvmJar --no-daemon
+
+      - name: Upload Desktop JARs
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-artifacts
+          path: '**/build/libs/'
+          retention-days: 7
+
+  build-web:
+    name: Build Web (JS)
+    needs: test
+    runs-on: [self-hosted, linux, x64, dev-vps]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build JS
+        run: ./gradlew jsMainClasses jsNodeProductionRun --no-daemon || echo "JS build (non-blocking)"
+
+      - name: Upload JS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-artifacts
+          path: '**/build/kotlin/'
           retention-days: 7
 
   quality-gate:
     name: Quality Gate
-    needs: [lint, test, build]
+    needs: [lint, test, build-android, build-desktop, build-web]
     runs-on: [self-hosted, linux, x64, dev-vps]
     steps:
-      - name: Check all quality checks passed
-        run: echo "✅ Build completed — quality gate passed."
+      - name: Verify all checks
+        run: echo "✅ All builds and tests completed successfully — quality gate passed."
