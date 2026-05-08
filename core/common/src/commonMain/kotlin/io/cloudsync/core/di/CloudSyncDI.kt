@@ -21,7 +21,6 @@ public object CloudSyncContainer {
      * Registers a dependency in the container.
      */
     public fun register(instance: Any, key: String) {
-        val key = name ?: T::class.qualifiedName ?: return
         dependencies[key] = instance
     }
 
