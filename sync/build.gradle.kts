@@ -48,6 +48,7 @@ kotlin {
         iosX64Main.dependsOn(iosMain)
         iosArm64Main.dependsOn(iosMain)
         iosSimulatorArm64Main.dependsOn(iosMain)
+    }
 
 android {
     namespace = "io.cloudsync.sync"
