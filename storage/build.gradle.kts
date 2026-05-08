@@ -37,12 +37,6 @@ kotlin {
             dependencies { implementation(libs.sqldelight.android) }
         }
         val desktopMain by getting
-        val iosMain by creating {
-            dependsOn(commonMain)
-            iosX64Main.dependsOn(this)
-            iosArm64Main.dependsOn(this)
-            iosSimulatorArm64Main.dependsOn(this)
-        }
     }
 
 android {
