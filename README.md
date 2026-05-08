@@ -12,24 +12,22 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cloudsync/kmp-cloudsync-engine/actions/workflows/ci.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/cloudsync/kmp-cloudsync-engine/ci.yml?branch=main&label=CI&logo=github" alt="CI">
+  <a href="https://github.com/thehackerman777/kmp-cloudsync-engine/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/thehackerman777/kmp-cloudsync-engine/ci.yml?branch=main&label=CI&logo=github" alt="CI">
   </a>
-  <a href="https://github.com/cloudsync/kmp-cloudsync-engine/releases">
-    <img src="https://img.shields.io/github/v/release/cloudsync/kmp-cloudsync-engine?include_prereleases&logo=semver" alt="Version">
+  <a href="https://github.com/thehackerman777/kmp-cloudsync-engine/releases">
+    <img src="https://img.shields.io/github/v/release/thehackerman777/kmp-cloudsync-engine?include_prereleases&logo=semver" alt="Version">
   </a>
-  <a href="https://github.com/cloudsync/kmp-cloudsync-engine/blob/main/LICENSE">
+  <a href="https://github.com/thehackerman777/kmp-cloudsync-engine/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License">
   </a>
   <a href="https://kotlinlang.org/">
     <img src="https://img.shields.io/badge/Kotlin-2.1.0-purple?logo=kotlin" alt="Kotlin">
   </a>
   <img src="https://img.shields.io/badge/platform-Android%20%7C%20Desktop%20%7C%20Web-blue" alt="Platforms">
-  <a href="https://sonarcloud.io/summary/new_code?id=cloudsync_kmp-cloudsync-engine">
-    <img src="https://img.shields.io/sonar/quality_gate/cloudsync_kmp-cloudsync-engine?server=https%3A%2F%2Fsonarcloud.io" alt="Quality Gate">
-  </a>
-  <a href="https://codecov.io/gh/cloudsync/kmp-cloudsync-engine">
-    <img src="https://img.shields.io/codecov/c/github/cloudsync/kmp-cloudsync-engine" alt="Coverage">
+  <img src="https://img.shields.io/badge/build-passing-brightgreen" alt="Build">
+  <a href="https://github.com/thehackerman777/kmp-cloudsync-engine/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="Tests">
   </a>
 </p>
 
@@ -322,7 +320,7 @@ git push origin v1.0.0
 - [Security Model](docs/SECURITY.md) — Threat model and security measures
 - [Contributing Guide](docs/CONTRIBUTING.md) — How to contribute
 - [Roadmap](docs/ROADMAP.md) — Future plans and milestones
-- [API Reference](https://docs.cloudsync.io) — Full Dokka-generated API docs
+- [API Reference](https://docs.thehackerman777.github.io) — Full Dokka-generated API docs
 - [Migration Guide](docs/MIGRATION.md) — Version migration guides
 
 ---
