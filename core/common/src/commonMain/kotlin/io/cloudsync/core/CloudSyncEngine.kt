@@ -1,8 +1,6 @@
 package io.cloudsync.core
 
-import io.cloudsync.sync.SyncConfiguration
-import io.cloudsync.sync.SyncResult
-import io.cloudsync.sync.engine.SyncEngine
+import io.cloudsync.core.result.SyncResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -39,15 +37,15 @@ public expect class CloudSyncEngine private constructor() {
     public val syncResults: Flow<SyncResult>
 
     /**
-     * Current sync configuration in use.
+     * Current sync configuration name in use.
      */
-    public val configuration: SyncConfiguration
+    public val configurationName: String
 
     /**
      * Initializes the engine with the given configuration.
      * Must be called before [start].
      */
-    public fun initialize(config: SyncConfiguration): CloudSyncEngine
+    public fun initialize(config: String): CloudSyncEngine
 
     /**
      * Starts the sync engine. Triggers an initial sync cycle
@@ -83,6 +81,6 @@ public expect class CloudSyncEngine private constructor() {
          * Creates a new configured instance.
          * Reuse across the application lifecycle.
          */
-        public fun configure(config: SyncConfiguration): CloudSyncEngine
+        public fun configure(config: String): CloudSyncEngine
     }
 }
