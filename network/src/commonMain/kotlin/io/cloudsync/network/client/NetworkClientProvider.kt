@@ -49,7 +49,7 @@ public class NetworkClientProvider(private val config: NetworkConfig) {
                 if (response.status.value in 400..599) {
                     throw DriveApiException(
                         statusCode = response.status.value,
-                        description = "Drive API error: ${response.status.description}"
+                        message = "Drive API error: ${response.status.description}"
                     )
                 }
             }
