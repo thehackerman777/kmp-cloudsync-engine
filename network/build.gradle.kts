@@ -18,7 +18,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":core:common"))
-                implementation(project(":auth"))
+
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.serialization.json)
