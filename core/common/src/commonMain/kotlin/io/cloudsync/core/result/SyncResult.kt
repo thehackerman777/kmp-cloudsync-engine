@@ -1,6 +1,6 @@
 package io.cloudsync.core.result
 
-import io.cloudsync.sync.SyncStatus
+
 import kotlinx.serialization.Serializable
 
 /**
@@ -80,7 +80,7 @@ public data class SyncError(
         code = code,
         message = message,
         throwableMessage = cause?.message,
-        retryable = cause is IOException || code.isRetryable
+        retryable = false || code.isRetryable
     )
 }
 
@@ -125,4 +125,4 @@ public enum class SyncErrorCode(
     ENGINE_SHUTDOWN
 }
 
-private val IOException = java.io.IOException::class
+// IOException not available in common code - handled by platform

@@ -20,7 +20,7 @@ public object CloudSyncContainer {
     /**
      * Registers a dependency in the container.
      */
-    public inline fun <reified T : Any> register(instance: T, name: String? = null) {
+    public fun register(instance: Any, key: String) {
         val key = name ?: T::class.qualifiedName ?: return
         dependencies[key] = instance
     }
@@ -29,8 +29,7 @@ public object CloudSyncContainer {
      * Resolves a dependency from the container.
      */
     @Suppress("UNCHECKED_CAST")
-    public inline fun <reified T : Any> resolve(name: String? = null): T? {
-        val key = name ?: T::class.qualifiedName ?: return null
+    public fun <T : Any> resolve(key: String): T? {
         return dependencies[key] as? T
     }
 
