@@ -1,6 +1,5 @@
 package io.cloudsync.network.client
 
-import io.cloudsync.network.interceptor.AuthInterceptor
 import io.cloudsync.network.interceptor.RetryInterceptor
 import io.cloudsync.network.interceptor.LoggingInterceptor
 import io.ktor.client.*
