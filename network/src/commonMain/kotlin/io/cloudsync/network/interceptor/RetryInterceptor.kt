@@ -32,11 +32,11 @@ public class RetryInterceptor(
                 response = execute(request)
 
                 if (shouldRetry(response)) {
-                    response.close()
+            // response closed
                     attempt++
                     if (attempt > config.maxRetries) break
-                    val delay = computeBackoff(attempt)
-                    delay(delay)
+                    val waitMs = computeBackoff(attempt)
+                    waitFor(waitMs)
                 } else {
                     break
                 }
