@@ -1,0 +1,108 @@
+-- CloudSync Local Database Schema
+-- SQLDelight schema for offline-first configuration storage
+
+CREATE TABLE IF NOT EXISTS configurations (
+    id TEXT NOT NULL PRIMARY KEY,
+    namespace TEXT NOT NULL DEFAULT '',
+    payload TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 0,
+    checksum TEXT NOT NULL DEFAULT '',
+    updated_at INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT 0,
+    synced INTEGER NOT NULL DEFAULT 1,
+    deleted INTEGER NOT NULL DEFAULT 0,
+    tags TEXT NOT NULL DEFAULT '[]',
+    size_bytes INTEGER NOT NULL DEFAULT 0,
+    encrypted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_config_namespace ON configurations(namespace);
+CREATE INDEX IF NOT EXISTS idx_config_synced ON configurations(synced);
+CREATE INDEX IF NOT EXISTS idx_config_updated ON configurations(updated_at DESC);
+
+-- Version history for audit trail
+CREATE TABLE IF NOT EXISTS version_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    config_id TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    checksum TEXT NOT NULL DEFAULT '',
+    timestamp INTEGER NOT NULL,
+    source TEXT NOT NULL DEFAULT 'LOCAL',
+    FOREIGN KEY (config_id) REFERENCES configurations(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_version_config ON version_history(config_id, version DESC);
+
+-- Sync metadata table
+CREATE TABLE IF NOT EXISTS sync_metadata (
+    config_id TEXT NOT NULL PRIMARY KEY,
+    last_sync_version INTEGER NOT NULL DEFAULT 0,
+    last_sync_timestamp INTEGER NOT NULL DEFAULT 0,
+    last_upload_version INTEGER NOT NULL DEFAULT 0,
+    last_download_version INTEGER NOT NULL DEFAULT 0,
+    conflict_count INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (config_id) REFERENCES configurations(id)
+);
+
+-- Queries: configurations
+
+selectAll:
+SELECT * FROM configurations WHERE deleted = 0;
+
+selectById:
+SELECT * FROM configurations WHERE id = ? AND deleted = 0;
+
+selectByNamespace:
+SELECT * FROM configurations WHERE namespace = ? AND deleted = 0
+ORDER BY updated_at DESC;
+
+selectPendingSync:
+SELECT * FROM configurations WHERE synced = 0 AND deleted = 0;
+
+selectCount:
+SELECT COUNT(*) FROM configurations WHERE deleted = 0;
+
+selectByVersion:
+SELECT * FROM configurations WHERE version > ? AND deleted = 0;
+
+insertOrReplace:
+INSERT OR REPLACE INTO configurations(
+    id, namespace, payload, version, checksum,
+    updated_at, created_at, synced, deleted, tags, size_bytes, encrypted
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+markSynced:
+UPDATE configurations SET synced = 1 WHERE id = ?;
+
+markDeleted:
+UPDATE configurations SET deleted = 1, synced = 0 WHERE id = ?;
+
+purgeDeleted:
+DELETE FROM configurations WHERE deleted = 1 AND updated_at < ?;
+
+getVersion:
+SELECT version FROM configurations WHERE id = ?;
+
+getChecksum:
+SELECT checksum FROM configurations WHERE id = ?;
+
+-- Queries: version_history
+
+insertVersionHistory:
+INSERT INTO version_history(config_id, version, checksum, timestamp, source)
+VALUES (?, ?, ?, ?, ?);
+
+selectVersionHistory:
+SELECT * FROM version_history WHERE config_id = ?
+ORDER BY version DESC LIMIT ?;
+
+-- Queries: sync_metadata
+
+upsertSyncMetadata:
+INSERT OR REPLACE INTO sync_metadata(
+    config_id, last_sync_version, last_sync_timestamp,
+    last_upload_version, last_download_version, conflict_count
+) VALUES (?, ?, ?, ?, ?, ?);
+
+selectSyncMetadata:
+SELECT * FROM sync_metadata WHERE config_id = ?;
