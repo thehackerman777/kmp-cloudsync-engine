@@ -4,7 +4,7 @@ import io.cloudsync.core.SyncState
 import io.cloudsync.core.result.SyncError
 import io.cloudsync.core.result.SyncErrorCode
 import io.cloudsync.core.result.SyncResult
-import io.cloudsync.sync.SyncConfiguration as SyncConfig
+import io.cloudsync.sync.SyncConfiguration
 import io.cloudsync.sync.engine.SyncEngine
 import io.cloudsync.sync.scheduler.SyncScheduler
 import kotlinx.coroutines.*
@@ -29,7 +29,7 @@ public class SyncOrchestrator(
     private val config: SyncConfig = SyncConfig()
 ) {
     private val _syncState = MutableStateFlow(SyncState.IDLE)
-    private val _syncResults = MutableSharedFlow<SyncResult>(replay = 0, extraBufferCapacity = 64)
+    private val _syncResults = MutableSharedFlow<SyncResult<Unit>>(replay = 0, extraBufferCapacity = 64)
     private val _syncEvents = MutableSharedFlow<SyncEvent>(replay = 10, extraBufferCapacity = 128)
 
     private var syncJob: Job? = null
@@ -39,7 +39,7 @@ public class SyncOrchestrator(
     public val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
     /** Observable sync results stream. */
-    public val syncResults: Flow<SyncResult> = _syncResults.asSharedFlow()
+    public val syncResults: Flow<SyncResult<Unit>> = _syncResults.asSharedFlow()
 
     /** Observable sync events for detailed telemetry. */
     public val syncEvents: Flow<SyncEvent> = _syncEvents.asSharedFlow()
