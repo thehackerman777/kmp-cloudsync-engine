@@ -7,6 +7,8 @@ import io.cloudsync.domain.model.Configuration
 import io.cloudsync.domain.model.ConflictResolution
 import io.cloudsync.domain.model.SyncMetadata
 import io.cloudsync.domain.model.SyncSource
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -52,14 +54,14 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
      * Observes all configurations reactively (for LiveData/StateFlow integration).
      */
     public fun observeAll(): Flow<List<Configuration>> {
-        return queries.selectAll().asFlow().mapToList { it.toDomain() }
+        return queries.selectAll().asFlow().mapToList(io.cloudsync.data.local.db.CloudSyncDatabase::class) { it.toDomain() }
     }
 
     /**
      * Observes configurations by namespace reactively.
      */
     public fun observeByNamespace(namespace: String): Flow<List<Configuration>> {
-        return queries.selectByNamespace(namespace).asFlow().mapToList { it.toDomain() }
+        return queries.selectByNamespace(namespace).asFlow().mapToList(io.cloudsync.data.local.db.CloudSyncDatabase::class) { it.toDomain() }
     }
 
     /**
@@ -91,7 +93,7 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
             created_at = updated.createdAt,
             synced = if (updated.synced) 1L else 0L,
             deleted = 0L,
-            tags = json.encodeToString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer<String>()), updated.tags),
+            tags = json.encodeToString(kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.builtins.serializer()), updated.tags),
             size_bytes = updated.sizeBytes,
             encrypted = if (updated.encrypted) 1L else 0L
         )
@@ -180,5 +182,4 @@ private fun io.cloudsync.data.local.db.Configuration.toDomain(): Configuration =
     encrypted = encrypted == 1L
 )
 
-// Minimal imports for compilation
-private typealias Configuration = io.cloudsync.domain.model.Configuration
+
