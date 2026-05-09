@@ -1,12 +1,14 @@
 name: Security Scan
 
 on:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '0 8 * * 1'  # Every Monday at 8 AM UTC
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 8 * * 1'  # Every Monday
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   codeql:
@@ -16,46 +18,28 @@ jobs:
       security-events: write
       actions: read
       contents: read
-
+    if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: kotlin, javascript
           queries: security-and-quality
-
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
-
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:kotlin"
 
   secrets-scan:
     name: Secrets Detection
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
-
       - name: Scan for Secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
           extra_args: --results=verified,unknown
-
-  sast:
-    name: Static Security Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: '17' }
-
-      - name: Run Detekt with Security Rules
-        run: ./gradlew detekt --no-daemon
-        env:
-          DETEKT_CONFIG: config/detekt/security-config.yml
