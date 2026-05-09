@@ -83,7 +83,8 @@ val fatDesktopJar by tasks.registering(Jar::class) {
 }
 
 // ── Android: Fat AAR ─────────────────────────────────────
-tasks.register("fatAar") {
+// ── Android: Fat AAR ─────────────────────────────────────
+val fatAar by tasks.registering {
     group = "distribution"
     description = "Build a fat AAR for Android bundling all module dependencies"
 
@@ -101,90 +102,85 @@ tasks.register("fatAar") {
 
     doLast {
         val rootDir = project.rootDir
-        val engineAar = listOf(
-            File(rootDir, "engine/build/outputs/aar/engine-release.aar"),
-            File(rootDir, "engine/build/outputs/aar/android-release.aar")
-        ).firstOrNull { it.exists() }
-            ?: throw GradleException("Engine AAR not found! Searched: engine/build/outputs/aar/")
-        
-        println("Using engine AAR: ${engineAar.absolutePath}")
+        val engineAar = fileTree(rootDir.resolve("engine/build/outputs/aar"))
+            .include("*.aar")
+            .filter { it.name.startsWith("engine") || it.name.startsWith("android") }
+            .maxByOrNull { it.length() }
+            ?: throw GradleException("Engine AAR not found in engine/build/outputs/aar/")
+
+        println("✅ Engine AAR: ${engineAar.name} (${engineAar.length() / 1024} KB)")
 
         val depAars = listOf(
             "core/common", "domain", "data", "network",
             "auth", "storage", "sync", "presentation"
         ).flatMap { module ->
-            val moduleName = module.split("/").last()
-            listOf(
-                // Try module name first, then flattened path
-                File(rootDir, "$module/build/outputs/aar/${moduleName}-release.aar"),
-                File(rootDir, "$module/build/outputs/aar/${module.replace("/", "-")}-release.aar"),
-                File(rootDir, "$module/build/outputs/aar/${moduleName}.release.aar")
-            ).filter { it.exists() }
-        }.distinct()
+            fileTree(rootDir.resolve("$module/build/outputs/aar"))
+                .include("*.aar")
+                .toList()
+        }.filter { it.exists() }
 
-        println("Found \${depAars.size} dependency AARs")
-        depAars.forEach { println("   📦 \${it.name}") }
+        println("Found ${depAars.size} dependency AARs")
 
         val outputFile = File(project.buildDir, "outputs/fat-aar/kmp-cloudsync-engine-android-${project.version}.aar")
         outputFile.parentFile.mkdirs()
 
-        val mergeDir = File(project.buildDir, "fat-aar-merge")
-        mergeDir.deleteRecursively()
-        mergeDir.mkdirs()
+        val mergeDir = File(project.buildDir, "fat-aar-merge").also {
+            it.deleteRecursively(); it.mkdirs()
+        }
 
         // Extract all AARs
         val allAars = listOf(engineAar) + depAars
-        allAars.forEach { aar ->
-            val moduleName = aar.parentFile.parentFile.name
-            copy {
-                from(project.zipTree(aar))
-                into(File(mergeDir, moduleName))
-            }
-        }
+        val mergedClasses = File(mergeDir, "merged-classes").also { it.mkdirs() }
 
-        // Merge classes.jar files
-        val mergedClasses = File(mergeDir, "merged-classes")
-        mergedClasses.mkdirs()
-        allAars.forEach { aar ->
-            val aarDir = File(mergeDir, aar.parentFile.parentFile.name)
-            val classesJar = File(aarDir, "classes.jar")
+        for (aar in allAars) {
+            println("   📦 ${aar.parentFile.parentFile.name}/${aar.name}")
+            val extractDir = File(mergeDir, aar.nameWithoutExtension)
+            copy { from(project.zipTree(aar)); into(extractDir) }
+
+            val classesJar = File(extractDir, "classes.jar")
             if (classesJar.exists()) {
                 copy {
                     from(project.zipTree(classesJar))
                     into(mergedClasses)
-                    exclude("META-INF/MANIFEST.MF")
-                    exclude("META-INF/*.SF")
-                    exclude("META-INF/*.DSA")
-                    exclude("META-INF/*.RSA")
+                    exclude("META-INF/MANIFEST.MF", "META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
                 }
             }
         }
 
-        // Re-jar as classes.jar
-        val finalClassesJar = File(mergeDir, "classes.jar")
-        ant.withGroovyBuilder {
-            "jar"("destfile" to finalClassesJar.absolutePath, "basedir" to mergedClasses.absolutePath)
+        // Create merged classes.jar using Gradle's Jar task
+        val mergedJarFile = File(mergeDir, "classes.jar")
+        project.javaexec {
+            classpath = project.files()
+            mainClass.set("sun.tools.jar.Main")
+            args = listOf("cf", mergedJarFile.absolutePath, "-C", mergedClasses.absolutePath, ".")
+        }.let { result ->
+            if (result.exitValue != 0) {
+                // Fallback: use simple jar command
+                exec {
+                    commandLine("jar", "cf", mergedJarFile.absolutePath, "-C", mergedClasses.absolutePath, ".")
+                }
+            }
         }
 
-        // Build final AAR from engine AAR structure + merged classes.jar
-        val aarBase = File(mergeDir, "aar-base")
+        // Build AAR from engine AAR structure + merged classes.jar
+        val aarBase = File(mergeDir, "aar-base").also { it.mkdirs() }
         copy {
             from(project.zipTree(engineAar))
             into(aarBase)
             exclude("classes.jar")
         }
         copy {
-            from(finalClassesJar)
+            from(mergedJarFile)
             into(aarBase)
         }
 
-        ant.withGroovyBuilder {
-            "zip"("destfile" to outputFile.absolutePath) {
-                "fileset"("dir" to aarBase.absolutePath)
-            }
+        // Package as AAR (just a zip)
+        exec {
+            workingDir = aarBase
+            commandLine("zip", "-r", outputFile.absolutePath, ".")
         }
 
-        println("✅ Fat AAR created: ${outputFile.absolutePath} (${outputFile.length() / 1024} KB)")
+        println("✅ Fat AAR: ${outputFile.absolutePath} (${outputFile.length() / 1024} KB)")
     }
 }
 
