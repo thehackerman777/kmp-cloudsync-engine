@@ -37,7 +37,7 @@ kotlin {
             dependencies { implementation(libs.sqldelight.android) }
         }
         val desktopMain by getting {
-            dependencies { implementation("app.cash.sqldelight:jdbc-driver:2.0.2") }
+            dependencies { implementation("app.cash.sqldelight:android-driver:2.0.2") }
         }
     }
 }
