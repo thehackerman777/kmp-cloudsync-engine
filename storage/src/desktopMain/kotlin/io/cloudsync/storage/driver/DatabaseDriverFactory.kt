@@ -7,8 +7,7 @@ import io.cloudsync.core.InternalCloudSyncApi
 @InternalCloudSyncApi
 public actual class DatabaseDriverFactory {
     public actual fun createDriver(): SqlDriver {
-        val dbUrl = "jdbc:sqlite:${databaseName()}"
-        return JdbcSqliteDriver(dbUrl)
+        return JdbcSqliteDriver("jdbc:sqlite:cloudsync.db")
     }
 
     public actual fun databaseName(): String = "cloudsync.db"
