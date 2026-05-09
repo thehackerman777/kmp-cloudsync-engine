@@ -76,7 +76,7 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
             created_at = updated.createdAt,
             synced = if (updated.synced) 1L else 0L,
             deleted = 0L,
-            tags = json.encodeToString(ListSerializer(serializer()), updated.tags),
+            tags = "[]",
             size_bytes = updated.sizeBytes,
             encrypted = if (updated.encrypted) 1L else 0L
         )
@@ -126,7 +126,7 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
 
 
 
-private fun io.cloudsync.data.local.db.Configuration.toDomain(): io.cloudsync.domain.model.Configuration {
+private fun io.cloudsync.data.local.db.Configurations.toDomain(): io.cloudsync.domain.model.Configuration {
     return io.cloudsync.domain.model.Configuration(
         id = id,
         namespace = namespace,
