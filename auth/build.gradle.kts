@@ -16,6 +16,7 @@ kotlin {
             dependencies {
                 implementation(project(":core:common"))
                 implementation(project(":network"))
+                implementation(project(":domain"))
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.serialization.json)

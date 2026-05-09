@@ -20,7 +20,11 @@ public data class Configuration(
     val synced: Boolean = true,
     val tags: List<String> = emptyList(),
     val sizeBytes: Long = 0,
-    val encrypted: Boolean = false
+    val encrypted: Boolean = false,
+    /** Optional user ID for identity-scoped configurations. */
+    val userId: String? = null,
+    /** Optional device ID for device-scoped configurations. */
+    val deviceId: String? = null
 ) {
     public val hasPendingChanges: Boolean get() = !synced
 

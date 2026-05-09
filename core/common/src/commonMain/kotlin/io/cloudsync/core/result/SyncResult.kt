@@ -122,6 +122,8 @@ public enum class SyncErrorCode(
     INTERNAL_ERROR(true),
     NOT_INITIALIZED,
     ALREADY_STARTED,
+    NOT_FOUND,
+    NOT_AUTHENTICATED,
     ENGINE_SHUTDOWN
 }
 

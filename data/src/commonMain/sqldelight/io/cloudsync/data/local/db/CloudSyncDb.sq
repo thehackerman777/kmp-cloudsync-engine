@@ -106,3 +106,48 @@ INSERT OR REPLACE INTO sync_metadata(
 
 selectSyncMetadata:
 SELECT * FROM sync_metadata WHERE config_id = ?;
+
+-- Operation Log Table for sync history
+-- Records every granular sync action for audit trails and UI display
+CREATE TABLE IF NOT EXISTS operation_log (
+    id TEXT NOT NULL PRIMARY KEY,
+    timestamp INTEGER NOT NULL,
+    direction TEXT NOT NULL,
+    config_id TEXT NOT NULL,
+    config_namespace TEXT NOT NULL DEFAULT '',
+    version INTEGER NOT NULL DEFAULT 0,
+    checksum TEXT NOT NULL DEFAULT '',
+    size_bytes INTEGER NOT NULL DEFAULT 0,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    result TEXT NOT NULL DEFAULT 'SUCCESS',
+    details TEXT NOT NULL DEFAULT '',
+    source_device_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_oplog_timestamp ON operation_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_oplog_config ON operation_log(config_id);
+CREATE INDEX IF NOT EXISTS idx_oplog_direction ON operation_log(direction);
+CREATE INDEX IF NOT EXISTS idx_oplog_result ON operation_log(result);
+
+-- Queries: operation_log
+
+selectRecentOperations:
+SELECT * FROM operation_log ORDER BY timestamp DESC LIMIT ?;
+
+selectOperationsByConfig:
+SELECT * FROM operation_log WHERE config_id = ? ORDER BY timestamp DESC;
+
+selectOperationsByDirection:
+SELECT * FROM operation_log WHERE direction = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?;
+
+selectOperationCount:
+SELECT COUNT(*) FROM operation_log;
+
+insertOperation:
+INSERT INTO operation_log(
+    id, timestamp, direction, config_id, config_namespace,
+    version, checksum, size_bytes, duration_ms, result, details, source_device_id
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+purgeOldOperations:
+DELETE FROM operation_log WHERE timestamp < ?;

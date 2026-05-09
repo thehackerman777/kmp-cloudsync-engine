@@ -16,9 +16,11 @@ kotlin {
             dependencies {
                 implementation(project(":core:common"))
                 implementation(project(":domain"))
+                implementation(project(":sync"))
                 implementation(libs.kotlin.stdlib)
                 implementation(libs.kotlin.coroutines.core)
                 implementation(libs.kotlin.serialization.json)
+                implementation(libs.kotlin.datetime)
             }
         }
         val commonTest by getting {
