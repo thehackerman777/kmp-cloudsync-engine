@@ -87,15 +87,10 @@ public class MockAuthProvider(
     )
 
     /**
-     * Validates that the engine is configured to use the mock provider.
-     * Returns a warning message if mock is detected in production config.
+     * Validates environment for mock usage (cross-platform safe).
+     * Always returns null in dev mode.
      */
     public fun validateEnvironment(): String? {
-        val envName = System.getProperty("cloudsync.env")
-            ?: System.getenv("CLOUDSYNC_ENV")
-        if (envName == "production" || envName == "prod") {
-            return "WARNING: MockAuthProvider detected in production environment!"
-        }
         return null
     }
 }

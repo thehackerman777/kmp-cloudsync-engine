@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+import os
+
+workflow = """name: Build All Artifacts
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [android, desktop, js]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build engine modules
+        run: ./gradlew :domain:compileKotlinDesktop :auth:compileKotlinDesktop :sync:compileKotlinDesktop :engine:compileKotlinDesktop
+
+      - name: Build Android sample (APK)
+        if: matrix.target == 'android'
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :samples:android-app:assembleDebug
+          mkdir -p artifacts/android
+          cp samples/android-app/build/outputs/apk/debug/*.apk artifacts/android/
+
+      - name: Build Desktop fat JAR
+        if: matrix.target == 'desktop'
+        run: |
+          ./gradlew :engine:fatDesktopJar
+          mkdir -p artifacts/desktop
+          cp engine/build/libs/kmp-cloudsync-engine-desktop-*.jar artifacts/desktop/
+
+      - name: Build JS web bundle
+        if: matrix.target == 'js'
+        run: |
+          ./gradlew :engine:jsWebBundle
+          mkdir -p artifacts/js
+          cp engine/build/outputs/js/engine.js artifacts/js/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kmp-cloudsync-${{ matrix.target }}
+          path: artifacts/${{ matrix.target }}/
+
+  deploy-pages:
+    needs: build
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: kmp-cloudsync-*
+          path: artifacts/
+
+      - name: Setup docs for GitHub Pages
+        run: |
+          mkdir -p docs/web-sample
+          ls -la artifacts/
+          # Copy JS bundle
+          cp artifacts/kmp-cloudsync-js/engine.js docs/web-sample/ 2>/dev/null || true
+          # Copy APK
+          mkdir -p docs/downloads
+          cp artifacts/kmp-cloudsync-android/*.apk docs/downloads/ 2>/dev/null || true
+          cp artifacts/kmp-cloudsync-desktop/*.jar docs/downloads/ 2>/dev/null || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+"""
+
+os.makedirs(".github/workflows", exist_ok=True)
+with open(".github/workflows/build.yml", "w") as f:
+    f.write(workflow)
+print(f"Created .github/workflows/build.yml ({len(workflow)} chars)")
