@@ -36,7 +36,9 @@ kotlin {
         val androidMain by getting {
             dependencies { implementation(libs.sqldelight.android) }
         }
-        val desktopMain by getting
+        val desktopMain by getting {
+            dependencies { implementation(libs.sqldelight.native) }
+        }
     }
 }
 
