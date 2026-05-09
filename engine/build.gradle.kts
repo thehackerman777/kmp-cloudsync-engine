@@ -101,19 +101,29 @@ tasks.register("fatAar") {
 
     doLast {
         val rootDir = project.rootDir
-        val engineAar = File(rootDir, "engine/build/outputs/aar/engine-release.aar")
-
-        if (!engineAar.exists()) {
-            throw GradleException("Engine AAR not found: ${engineAar.absolutePath}")
-        }
+        val engineAar = listOf(
+            File(rootDir, "engine/build/outputs/aar/engine-release.aar"),
+            File(rootDir, "engine/build/outputs/aar/android-release.aar")
+        ).firstOrNull { it.exists() }
+            ?: throw GradleException("Engine AAR not found! Searched: engine/build/outputs/aar/")
+        
+        println("Using engine AAR: ${engineAar.absolutePath}")
 
         val depAars = listOf(
             "core/common", "domain", "data", "network",
             "auth", "storage", "sync", "presentation"
-        ).map { module ->
-            val path = module.replace("/", "-")
-            File(rootDir, "$module/build/outputs/aar/${path}-release.aar")
-        }.filter { it.exists() }
+        ).flatMap { module ->
+            val moduleName = module.split("/").last()
+            listOf(
+                // Try module name first, then flattened path
+                File(rootDir, "$module/build/outputs/aar/${moduleName}-release.aar"),
+                File(rootDir, "$module/build/outputs/aar/${module.replace("/", "-")}-release.aar"),
+                File(rootDir, "$module/build/outputs/aar/${moduleName}.release.aar")
+            ).filter { it.exists() }
+        }.distinct()
+
+        println("Found \${depAars.size} dependency AARs")
+        depAars.forEach { println("   📦 \${it.name}") }
 
         val outputFile = File(project.buildDir, "outputs/fat-aar/kmp-cloudsync-engine-android-${project.version}.aar")
         outputFile.parentFile.mkdirs()
