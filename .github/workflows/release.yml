@@ -25,7 +25,7 @@ jobs:
       - name: Validate Desktop compilation
         run: ./gradlew :engine:compileKotlinDesktop --no-daemon
       - name: Validate JS compilation
-        run: ./gradlew :engine:jsBrowserProductionWebpack --no-daemon
+        run: ./gradlew :engine:compileKotlinJs --no-daemon
 
   test:
     name: Run Tests
