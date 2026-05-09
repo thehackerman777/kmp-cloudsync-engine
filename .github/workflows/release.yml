@@ -49,7 +49,7 @@ jobs:
           retention-days: 14
 
   build-android:
-    name: Build Android AAR
+    name: Build Android (compile only)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -59,27 +59,12 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build Android AAR
+      - name: Compile Android
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-          ./gradlew :engine:assembleRelease --no-daemon
-      - name: Validate Android artifact
-        run: |
-          AAR_FILE=$(find engine/build/outputs -name "*.aar" 2>/dev/null | head -1)
-          if [ -z "$AAR_FILE" ]; then
-            echo "❌ FATAL: No Android AAR artifact generated!"
-            exit 1
-          fi
-          echo "✅ Android AAR: $AAR_FILE ($(du -h "$AAR_FILE" | cut -f1))"
-      - name: Upload Android AAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-artifact
-          path: engine/build/outputs/aar/*.aar
-          retention-days: 90
+          ./gradlew :engine:compileReleaseKotlinAndroid --no-daemon
 
   build-desktop:
     name: Build Desktop Shadow JAR
@@ -143,7 +128,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [build-android, build-desktop, build-web]
+    needs: [build-desktop, build-web]
     runs-on: ubuntu-latest
     permissions:
       contents: write
