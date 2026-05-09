@@ -21,7 +21,7 @@ public class PayloadSerializer(
         return json.encodeToString(value)
     }
 
-    public inline fun <reified T> deserialize(payload: String): T {
+    public fun <reified T> deserialize(payload: String): T {
         return json.decodeFromString(payload)
     }
 
