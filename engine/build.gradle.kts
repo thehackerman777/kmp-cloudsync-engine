@@ -10,9 +10,14 @@ kotlin {
     }
     jvm("desktop")
     js(IR) {
-        browser()
+        browser {
+            webpackTask {
+                output.libraryTarget = "umd"
+                output.library = "CloudSyncEngine"
+            }
+        }
         nodejs()
-        binaries.library()
+        binaries.executable()
     }
 
     sourceSets {
@@ -55,24 +60,21 @@ android {
     }
 }
 
-// ── Desktop: Fat/Shadow JAR ──────────────────────────────
+// Desktop: Fat/Shadow JAR
 val fatDesktopJar by tasks.registering(Jar::class) {
     group = "distribution"
     description = "Build a fat JAR for Desktop bundling all runtime dependencies"
 
     dependsOn("desktopMainClasses")
 
-    // Include compiled desktop classes
     from({ kotlin.targets.getByName("desktop").compilations.getByName("main").output.allOutputs })
 
-    // Include all runtime dependencies
     from({
         project.configurations.getByName("desktopRuntimeClasspath")
             .filter { it.name.endsWith(".jar") }
             .map { if (it.isFile) project.zipTree(it) else it }
     })
 
-    // Exclude signature files
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 
     archiveBaseName.set("kmp-cloudsync-engine-desktop")
@@ -82,54 +84,60 @@ val fatDesktopJar by tasks.registering(Jar::class) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-// ── Android: Fat AAR ─────────────────────────────────────
-// ── Android: Standard AAR (fat AAR pospuesto) ────────────
-// El AAR se genera via :engine:assembleRelease (AGP)
-// build/outputs/aar/engine-release.aar contiene el modulo
-// y sus dependencias transitivas via POM.
-
-// ── JS: Bundle distributable (copia toda la library) ─────
+// JS: Webpack production bundle (single UMD file)
 tasks.register("jsWebBundle") {
     group = "distribution"
-    description = "Copy the full JS library distribution to outputs/js/"
+    description = "Build a single-file UMD JS bundle via webpack"
 
-    dependsOn("jsNodeProductionLibraryDistribution")
+    dependsOn("jsBrowserProductionWebpack")
 
     doLast {
         val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        val libDir = File(project.buildDir, "dist/js/productionLibrary")
-        if (!libDir.exists()) throw GradleException("JS library output not found: ${libDir.absolutePath}")
-
-        // Copiar TODO el contenido de la library (entry + módulos + package.json)
-        copy {
-            from(libDir)
-            into(outputDir)
+        val webpackDir = File(project.buildDir, "kotlin-webpack/js/productionExecutable")
+        if (!webpackDir.exists()) {
+            throw GradleException("Webpack output not found: " + webpackDir.absolutePath)
         }
 
-        val fileCount = outputDir.listFiles()?.size ?: 0
+        val bundleFiles = webpackDir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".js") && !it.name.endsWith(".js.map") }
+            ?.filter { !it.name.contains("worker") }
+            ?.sortedBy { it.name }
+
+        if (bundleFiles.isNullOrEmpty()) {
+            throw GradleException("No JS bundle found in " + webpackDir.absolutePath)
+        }
+
+        bundleFiles.forEach { f ->
+            f.copyTo(File(outputDir, f.name), overwrite = true)
+        }
+
+        webpackDir.listFiles()
+            ?.filter { it.isFile && it.name.endsWith(".js.map") }
+            ?.forEach { f ->
+                f.copyTo(File(outputDir, f.name), overwrite = true)
+            }
+
         val totalSize = (outputDir.walkTopDown().filter { it.isFile }.sumOf { it.length() } / 1024)
-        println("✅ JS library distribution copiada a: ${outputDir.absolutePath}")
-        println("   Archivos: $fileCount, Total: ${totalSize}KB")
+        println("JS webpack bundle copied to: " + outputDir.absolutePath)
+        println("   Total: " + totalSize + "KB")
         outputDir.listFiles()?.sortedBy { it.name }?.forEach { f ->
-            println("   📄 ${f.name} (${f.length() / 1024}KB)")
+            println("   " + f.name + " (" + (f.length() / 1024) + "KB)")
         }
     }
 }
 
-// ── Aggregate task ────────────────────────────────────────
+// Aggregate task
 tasks.register("buildAllArtifacts") {
     group = "distribution"
     description = "Build all platform artifacts (Android AAR, Desktop Shadow JAR, JS bundle)"
     dependsOn("fatDesktopJar", "jsWebBundle")
 
     doLast {
-        println("""
-            |✅ All artifacts built:
-            |   Desktop: ${project.buildDir}/libs/kmp-cloudsync-engine-desktop-${project.version}-all.jar
-            |   Web:     ${project.buildDir}/outputs/js/kmp-cloudsync-engine-web.js
-            |   Android: assembleRelease (AGP) → build/outputs/aar/
-        """.trimMargin())
+        println("All artifacts built:")
+        println("   Desktop: " + project.buildDir + "/libs/kmp-cloudsync-engine-desktop-0.2.0-all.jar")
+        println("   Web:     " + project.buildDir + "/outputs/js/kmp-cloudsync-engine.js")
+        println("   Android: assembleRelease - build/outputs/aar/")
     }
 }
