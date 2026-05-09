@@ -60,8 +60,18 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Accept Android SDK licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
+      - name: Setup Android SDK
+        run: |
+          echo "Checking Android SDK location..."
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls $ANDROID_HOME/ 2>/dev/null || echo "No SDK at ANDROID_HOME"
+          ls /usr/local/android-sdk/ 2>/dev/null && echo "Found at /usr/local/android-sdk"
+          ls /opt/android-sdk/ 2>/dev/null && echo "Found at /opt/android-sdk"
+          SDK_DIR="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          mkdir -p "$SDK_DIR/licenses"
+          echo -e "\n24333f8a63b6825ea9c5514f83c2829b0046731a\n8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
+          echo "sdk.dir=$SDK_DIR" > local.properties
+          cat local.properties
       - name: Build Android modules
         run: ./gradlew :engine:assembleRelease --no-daemon
       - name: Build Fat AAR
