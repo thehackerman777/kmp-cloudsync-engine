@@ -131,6 +131,73 @@ It uses **Google Drive's invisible `appDataFolder`** as the cloud backend, ensur
 
 ---
 
+
+---
+
+## 🏗️ Build Pipeline
+
+### Platform Artifacts
+
+| Artifact | Command | Output |
+|----------|---------|--------|
+| **Android AAR** | `./gradlew :engine:assembleRelease` | `engine/build/outputs/aar/engine-release.aar` |
+| **Desktop Fat JAR** | `./gradlew :engine:fatDesktopJar` | `engine/build/libs/*-desktop-*-all.jar` (~21MB) |
+| **JS Bundle** | `./gradlew :engine:jsWebBundle` | `engine/build/outputs/js/engine.js` (~101KB) |
+| **All artifacts** | `./gradlew :engine:buildAllArtifacts` | — |
+| **MavenLocal** | `./gradlew :engine:publishToMavenLocal` | `io.cloudsync:engine:0.2.0` |
+
+### Quick Reference
+
+```bash
+# Full build + validate
+./scripts/build-all.sh
+
+# Publish for local consumption
+./scripts/publish-local.sh
+
+# Validate generated artifacts
+./scripts/validate-artifacts.sh
+```
+
+---
+
+## 📦 Sample Projects
+
+Consume the engine in real projects:
+
+### Desktop (JVM Console)
+
+```bash
+./gradlew :samples:desktop-app:run
+```
+
+### Android (Compose)
+
+```bash
+./gradlew :samples:android-app:assembleDebug
+```
+
+### Web (JS)
+
+```bash
+node -e "const m = require(./engine/build/outputs/js/engine.js); const e = m.io.cloudsync.engine.CloudSyncEngine.Companion.create({}); e.start(); console.log(Engine state:, e.getState());"
+```
+
+---
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Building for Android](docs/BUILD-ANDROID.md) | Consume AAR via MavenLocal or Fat AAR |
+| [Building for Desktop](docs/BUILD-DESKTOP.md) | Consume the Fat JAR |
+| [Building for Web](docs/BUILD-WEB.md) | Consume the JS UMD bundle |
+| [Release Checklist](docs/RELEASE-CHECKLIST.md) | Steps for publishing a release |
+| [VPS Workflow](docs/VPS-WORKFLOW.md) | Build server setup & scripts |
+
+---
+
+
 ## 🚀 Quick Start
 
 ### 1. Add Dependency

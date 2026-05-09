@@ -2,21 +2,18 @@
 
 ## Overview
 
-All builds run on the dev-vps (t3.large, 18.213.174.229).
-- ANDROID_HOME: `/home/ubuntu/android-sdk`
-- Java: OpenJDK 21
-- Node: v22.22.2
+All builds run on the designated build server.
+- **OS:** Ubuntu 24.04 LTS
+- **Java:** OpenJDK 21
+- **Node.js:** v22.22.2
+- **Android SDK:** API 34 + 35, build-tools 34.0.0
 
 ## Quick Reference
 
 ### Build everything
 
 ```bash
-# SSH to VPS
-ssh dev-vps
 cd ~/projects/kmp-cloudsync-engine
-
-# Full build
 ./scripts/build-all.sh
 ```
 
@@ -78,16 +75,9 @@ cd ~/projects/kmp-cloudsync-engine
 org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=512m
 ```
 
-### Android SDK not found
-```bash
-export ANDROID_HOME=/home/ubuntu/android-sdk
-export ANDROID_SDK_ROOT=$ANDROID_HOME
-```
-
 ### JS bundle not found
 ```bash
 # Ensure binaries.executable() is set in build.gradle.kts for JS target
-# Run webpack task explicitly first:
 ./gradlew :engine:jsBrowserProductionWebpack --no-daemon
 ./gradlew :engine:jsWebBundle --no-daemon
 ```
