@@ -54,14 +54,14 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
      * Observes all configurations reactively (for LiveData/StateFlow integration).
      */
     public fun observeAll(): Flow<List<Configuration>> {
-        return queries.selectAll().asFlow().mapToList(io.cloudsync.data.local.db.CloudSyncDatabase::class) { it.toDomain() }
+        return queries.selectAll().asFlow().mapToList().map { list -> list.map { it.toDomain() } }
     }
 
     /**
      * Observes configurations by namespace reactively.
      */
     public fun observeByNamespace(namespace: String): Flow<List<Configuration>> {
-        return queries.selectByNamespace(namespace).asFlow().mapToList(io.cloudsync.data.local.db.CloudSyncDatabase::class) { it.toDomain() }
+        return queries.selectByNamespace(namespace).asFlow().mapToList().map { list -> list.map { it.toDomain() } }
     }
 
     /**
