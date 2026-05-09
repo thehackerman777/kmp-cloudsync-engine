@@ -89,10 +89,17 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Build Android AAR
-        run: ./gradlew :engine:assembleRelease --no-daemon
+      - name: Build Desktop modules
+        run: ./gradlew :engine:compileKotlinDesktop --no-daemon
+      - name: Build Shadow JAR
+        run: ./gradlew :engine:fatDesktopJar --no-daemon
+      - name: Validate Desktop artifact
+        run: |
+          JAR_FILE=$(find engine/build/libs -name "*.jar" 2>/dev/null | head -1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "❌ FATAL: No Desktop JAR artifact generated!"
+            exit 1
+          fi
           echo "✅ Desktop JAR found: $JAR_FILE ($(du -h "$JAR_FILE" | cut -f1))"
       - name: Upload Desktop JAR
         uses: actions/upload-artifact@v4
@@ -112,10 +119,17 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Build Android AAR
-        run: ./gradlew :engine:assembleRelease --no-daemon
+      - name: Build JS modules
+        run: ./gradlew :engine:jsNodeProductionLibraryDistribution --no-daemon
+      - name: Bundle JS standalone
+        run: ./gradlew :engine:jsStandaloneBundle --no-daemon
+      - name: Validate JS artifact
+        run: |
+          JS_FILE=$(find engine/build/outputs/js -name "*.js" 2>/dev/null | head -1)
+          if [ -z "$JS_FILE" ]; then
+            echo "❌ FATAL: No Web JS artifact generated!"
+            exit 1
+          fi
           echo "✅ Web JS bundle found: $JS_FILE ($(du -h "$JS_FILE" | cut -f1))"
       - name: Upload JS bundle
         uses: actions/upload-artifact@v4
@@ -134,7 +148,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Generate Changelog
         id: changelog
         run: |
@@ -148,66 +161,47 @@ jobs:
             echo 'EOF' >> $GITHUB_OUTPUT
           fi
           echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts/
-
       - name: List downloaded artifacts
         run: find release-artifacts -type f -ls
-
       - name: Verify all platform artifacts exist
         run: |
           ANDROID_COUNT=$(find release-artifacts/android-artifact -name "*.aar" | wc -l)
           DESKTOP_COUNT=$(find release-artifacts/desktop-artifact -name "*.jar" | wc -l)
           WEB_COUNT=$(find release-artifacts/web-artifact -name "*.js" | wc -l)
-
           echo "📱 Android AARs: $ANDROID_COUNT"
           echo "🖥️ Desktop JARs: $DESKTOP_COUNT"
-          echo "🌐 Web JS: $WEB_COUNT"
-
+          echo "🌐 Web JS files: $WEB_COUNT"
           if [ "$ANDROID_COUNT" -eq 0 ] || [ "$DESKTOP_COUNT" -eq 0 ] || [ "$WEB_COUNT" -eq 0 ]; then
             echo "❌ FATAL: Missing platform artifacts!"
             exit 1
           fi
           echo "✅ All platform artifacts present"
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.changelog.outputs.tag }}
           name: Release ${{ steps.changelog.outputs.tag }}
           body: |
-            ## 🚀 KMP CloudSync Engine ${{ steps.changelog.outputs.tag }}
+            ## 🚀 KMP CloudSync Engine ${{ github.ref_name }}
 
             ${{ steps.changelog.outputs.changelog }}
 
             ### 📦 Artifacts
-
-            - **📱 Android** — `kmp-cloudsync-engine-android-*.aar` (Fat AAR — single dependency)
-            - **🖥️ Desktop** — `kmp-cloudsync-engine-desktop-*-all.jar` (Shadow JAR — single dependency)
-            - **🌐 Web** — `kmp-cloudsync-engine-*.js` (Standalone JS bundle)
+            - **📱 Android** — `engine-release.aar`
+            - **🖥️ Desktop** — `kmp-cloudsync-engine-desktop-*-all.jar`
+            - **🌐 Web** — JS library distribution (40+ files)
 
             ### ⚡ Usage
-
-            **Android / Desktop / Web:**
             ```kotlin
             repositories { mavenCentral() }
             dependencies {
                 implementation("io.cloudsync:kmp-cloudsync-engine:${{ github.ref_name }}")
             }
             ```
-
-            **Direct download (no build tool):**
-            - Download the platform-specific artifact from Assets below
-            - **Desktop:** Add the shadow JAR to your classpath
-            - **Web:** Include the JS bundle via `<script>` tag in your HTML
-
-            ### 📚 Docs
-            - [Architecture](docs/ARCHITECTURE.md)
-            - [Security](docs/SECURITY.md)
-            - [README español](README.es.md)
           files: |
             release-artifacts/android-artifact/*.aar
             release-artifacts/desktop-artifact/*.jar
