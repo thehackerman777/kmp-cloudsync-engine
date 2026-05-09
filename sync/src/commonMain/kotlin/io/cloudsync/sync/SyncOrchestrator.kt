@@ -26,7 +26,7 @@ public class SyncOrchestrator(
     private val syncEngine: SyncEngine,
     private val syncScheduler: SyncScheduler,
     private val scope: CoroutineScope,
-    private val config: SyncConfig = SyncConfig()
+    private val config: SyncConfiguration = SyncConfiguration()
 ) {
     private val _syncState = MutableStateFlow(SyncState.IDLE)
     private val _syncResults = MutableSharedFlow<SyncResult<Unit>>(replay = 0, extraBufferCapacity = 64)
@@ -48,7 +48,7 @@ public class SyncOrchestrator(
      * Starts the sync orchestrator.
      * Triggers initial sync and begins background scheduling.
      */
-    public suspend fun start(): SyncResult {
+    public suspend fun start(): SyncResult<Unit> {
         _syncState.value = SyncState.INITIALIZING
 
         syncEngine.initialize()
@@ -87,7 +87,7 @@ public class SyncOrchestrator(
     /**
      * Triggers an immediate manual sync cycle.
      */
-    public suspend fun syncNow(): SyncResult {
+    public suspend fun syncNow(): SyncResult<Unit> {
         if (_syncState.value == SyncState.SYNCING) {
             return SyncResult.error(SyncErrorCode.SYNC_CYCLE_IN_PROGRESS, "Sync already in progress")
         }
@@ -108,7 +108,7 @@ public class SyncOrchestrator(
         _syncState.value = SyncState.IDLE
     }
 
-    private suspend fun runSyncCycle(): SyncResult {
+    private suspend fun runSyncCycle(): SyncResult<Unit> {
         return try {
             _syncEvents.emit(SyncEvent.CycleStarted)
 
