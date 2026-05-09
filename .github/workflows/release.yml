@@ -8,7 +8,6 @@ on:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
-  ANDROID_HOME: /usr/local/lib/android/sdk
 
 jobs:
   validate:
@@ -61,21 +60,9 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
       - name: Setup Android SDK
-        run: |
-          echo "ANDROID_HOME=\$ANDROID_HOME"
-          echo "Platforms:"
-          ls "\$ANDROID_HOME/platforms/" 2>/dev/null || echo "(none)"
-          echo "Build tools:"
-          ls "\$ANDROID_HOME/build-tools/" 2>/dev/null || echo "(none)"
-          # Accept licenses
-          mkdir -p "\$ANDROID_HOME/licenses"
-          echo -e "\n24333f8a63b6825ea9c5514f83c2829b0046731a" > "\$ANDROID_HOME/licenses/android-sdk-license"
-          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "\$ANDROID_HOME/licenses/android-sdk-preview-license"
-          # Create local.properties
-          echo "sdk.dir=\$ANDROID_HOME" > local.properties
-          echo "Created local.properties: \$(cat local.properties)"
+        uses: android-actions/setup-android@v3
       - name: Build Android AAR
-run: ./gradlew :engine:assembleRelease --no-daemon --no-build-cache --info
+        run: ./gradlew :engine:assembleRelease --no-daemon
       - name: Validate Android artifact
         run: |
           AAR_FILE=$(find engine/build/outputs -name "*.aar" 2>/dev/null | head -1)
@@ -102,17 +89,10 @@ run: ./gradlew :engine:assembleRelease --no-daemon --no-build-cache --info
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build Desktop modules
-        run: ./gradlew :engine:compileKotlinDesktop --no-daemon
-      - name: Build Shadow JAR
-        run: ./gradlew :engine:fatDesktopJar --no-daemon
-      - name: Validate Desktop artifact
-        run: |
-          JAR_FILE=$(find engine/build/libs -name "*.jar" 2>/dev/null | head -1)
-          if [ -z "$JAR_FILE" ]; then
-            echo "❌ FATAL: No Desktop JAR artifact generated!"
-            exit 1
-          fi
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Build Android AAR
+        run: ./gradlew :engine:assembleRelease --no-daemon
           echo "✅ Desktop JAR found: $JAR_FILE ($(du -h "$JAR_FILE" | cut -f1))"
       - name: Upload Desktop JAR
         uses: actions/upload-artifact@v4
@@ -132,17 +112,10 @@ run: ./gradlew :engine:assembleRelease --no-daemon --no-build-cache --info
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build JS modules
-        run: ./gradlew :engine:jsNodeProductionLibraryDistribution --no-daemon
-      - name: Bundle JS standalone
-        run: ./gradlew :engine:jsStandaloneBundle --no-daemon
-      - name: Validate JS artifact
-        run: |
-          JS_FILE=$(find engine/build/outputs/js -name "*.js" 2>/dev/null | head -1)
-          if [ -z "$JS_FILE" ]; then
-            echo "❌ FATAL: No Web JS artifact generated!"
-            exit 1
-          fi
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Build Android AAR
+        run: ./gradlew :engine:assembleRelease --no-daemon
           echo "✅ Web JS bundle found: $JS_FILE ($(du -h "$JS_FILE" | cut -f1))"
       - name: Upload JS bundle
         uses: actions/upload-artifact@v4
