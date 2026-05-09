@@ -18,7 +18,7 @@ public class PayloadSerializer(
         prettyPrint = false
     }
 ) {
-    public fun serialize(value: @kotlinx.serialization.Serializable Any): String {
+    public fun serialize(value: Any): String {
         return json.encodeToString(value)
     }
 
