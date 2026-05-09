@@ -41,7 +41,6 @@ public class RemoteDataSource(
                 parameter("spaces", "appDataFolder")
                 parameter("fields", "files(id,name,mimeType,size,modifiedTime,version,md5Checksum,appProperties)")
                 parameter("pageSize", 100)
-                parameterOrder("modifiedTime desc")
             }
 
             if (response.status == HttpStatusCode.OK) {
