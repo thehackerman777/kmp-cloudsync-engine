@@ -125,6 +125,7 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
 }
 
 
+
 private fun io.cloudsync.data.local.db.Configuration.toDomain(): io.cloudsync.domain.model.Configuration {
     return io.cloudsync.domain.model.Configuration(
         id = id,
