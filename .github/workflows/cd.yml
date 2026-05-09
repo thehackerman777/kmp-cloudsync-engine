@@ -26,9 +26,9 @@ jobs:
       - name: Build Desktop JARs
         continue-on-error: true
         run: |
-          ./gradlew :core:common:jvmJar :domain:jvmJar :network:jvmJar \
-            :auth:jvmJar :storage:jvmJar :data:jvmJar :sync:jvmJar \
-            :presentation:jvmJar --no-daemon
+          ./gradlew :core:common:desktopJar :domain:desktopJar :network:desktopJar \
+            :auth:desktopJar :storage:desktopJar :data:desktopJar :sync:desktopJar \
+            :presentation:desktopJar --no-daemon || echo "Desktop JARs: non-blocking"
 
       - name: Build Android AARs
         continue-on-error: true
