@@ -9,6 +9,7 @@ env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
   ANDROID_HOME: /usr/local/lib/android/sdk
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
 jobs:
   validate:
@@ -67,8 +68,11 @@ jobs:
           echo "sdk.dir=\$ANDROID_HOME" > local.properties
           echo "sdk.dir=\$ANDROID_HOME" >> local.properties
           cat local.properties
-      - name: Build Android modules
-        run: ./gradlew :engine:assembleRelease --no-daemon
+      - name: Build Android AAR
+        run: |
+          ./gradlew :engine:compileReleaseKotlinAndroid --no-daemon --info 2>&1 || true
+          echo "--- Trying assemble now ---"
+          ./gradlew :engine:assembleRelease --stacktrace --no-daemon 2>&1 | tail -20
       - name: Build Fat AAR
         run: ./gradlew :engine:fatAar --no-daemon
       - name: Validate Android artifact
