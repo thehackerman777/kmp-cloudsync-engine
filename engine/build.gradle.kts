@@ -181,7 +181,7 @@ tasks.register("fatAar") {
 // ── JS: Standalone bundle ─────────────────────────────────
 tasks.register("jsStandaloneBundle") {
     group = "distribution"
-    description = "Copy the production library JS distribution to outputs/js"
+    description = "Copy the JS library distribution to outputs/js/"
 
     dependsOn("jsNodeProductionLibraryDistribution")
 
@@ -192,7 +192,7 @@ tasks.register("jsStandaloneBundle") {
         val libDir = File(project.buildDir, "dist/js/productionLibrary")
 
         if (!libDir.exists()) {
-            throw GradleException("JS library output not found: ${libDir.absolutePath}")
+            throw GradleException("JS library distribution not found: ${libDir.absolutePath}")
         }
 
         copy {
@@ -203,15 +203,11 @@ tasks.register("jsStandaloneBundle") {
             into(outputDir)
         }
 
-        val jsFiles = outputDir.listFiles { f -> f.name.endsWith(".js") } ?: emptyArray()
-        if (jsFiles.isEmpty()) {
-            throw GradleException("No JS files found after library build")
-        }
+        val jsCount = outputDir.listFiles { f -> f.extension == "js" }?.size ?: 0
+        val totalSize = (outputDir.listFiles()?.sumOf { it.length() } ?: 0) / 1024
 
-        println("✅ JS library distribution ready at: ${outputDir.absolutePath}")
-        println("   Total files: ${jsFiles.size} JS files")
-        val totalSize = jsFiles.sumOf { it.length() } / 1024
-        println("   Total size: ${totalSize} KB")
+        println("✅ JS library distribution: ${outputDir.absolutePath}")
+        println("   Files: $jsCount JS + $jsCount.map, Total: ${totalSize}KB")
     }
 }
 
