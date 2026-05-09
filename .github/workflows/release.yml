@@ -8,6 +8,7 @@ on:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
+  ANDROID_HOME: /usr/local/lib/android/sdk
 
 jobs:
   validate:
@@ -62,11 +63,11 @@ jobs:
       - name: Setup Android SDK
         run: |
           echo "ANDROID_HOME=\$ANDROID_HOME"
-          echo "SDK Root: \$ANDROID_HOME"
-          ls "\$ANDROID_HOME/platforms/" 2>/dev/null || echo "No platforms"
-          ls "\$ANDROID_HOME/build-tools/" 2>/dev/null || echo "No build-tools"
-          mkdir -p "\$ANDROID_HOME/licenses/"
-          echo -e "\n24333f8a63b6825ea9c5514f83c2829b0046731a" > "\$ANDROID_HOME/licenses/android-sdk-license"
+          ls "\$ANDROID_HOME/platforms/" 2>/dev/null || echo "No platforms dir"
+          ls "\$ANDROID_HOME/build-tools/" 2>/dev/null || echo "No build-tools dir"
+          # Accept licenses and install required platform
+          yes | "\$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses 2>/dev/null || true
+          "\$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" 2>&1 || echo "SDK install optional"
           echo "sdk.dir=\$ANDROID_HOME" > local.properties
           cat local.properties
       - name: Build Android AAR
