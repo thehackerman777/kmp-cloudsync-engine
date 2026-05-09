@@ -100,9 +100,7 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
         return queries.selectPendingSync().executeAsList().map { it.toDomain() }
     }
 
-    public suspend fun getVersion(id: String): Long {
-        val result = queries.getVersion(id).executeAsOneOrNull()
-        return if (result != null) result.version_ else 0L
+    public suspend fun getVersion(id: String): Long {return queries.getVersion(id).executeAsOneOrNull() ?: 0L
     }
 
     public suspend fun markSynced(id: String) {

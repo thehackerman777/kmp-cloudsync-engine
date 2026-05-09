@@ -75,9 +75,9 @@ jobs:
             echo "changelog=Initial release" >> $GITHUB_OUTPUT
           else
             CHANGES=$(git log --pretty=format:"* %s (%h)" $PREV_TAG..HEAD)
-            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "changelog<<ENDCHANGELOG" >> $GITHUB_OUTPUT
             echo "$CHANGES" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            echo "ENDCHANGELOG" >> $GITHUB_OUTPUT
           fi
 
       - name: Create GitHub Release
