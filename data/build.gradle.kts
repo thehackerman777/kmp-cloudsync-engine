@@ -50,10 +50,12 @@ kotlin {
             }
         }
         val androidMain by getting {
-            dependencies { implementation(libs.sqldelight.android) }
+            dependencies { implementation("app.cash.sqldelight:jdbc-driver:2.0.2")
+            implementation("org.xerial:sqlite-jdbc:3.45.3.0") }
         }
         val desktopMain by getting {
-            dependencies { implementation(libs.sqldelight.android) }
+            dependencies { implementation("app.cash.sqldelight:jdbc-driver:2.0.2")
+            implementation("org.xerial:sqlite-jdbc:3.45.3.0") }
         }
     }
 }
