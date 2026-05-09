@@ -4,35 +4,12 @@ import app.cash.sqldelight.db.SqlDriver
 import io.cloudsync.core.InternalCloudSyncApi
 
 /**
- * Platform-specific SQLDelight driver factory.
+ * Provides a SQLDelight database driver for the current platform.
  *
- * Implementations:
- * - Android: AndroidSqliteDriver (with WAL mode)
- * - Desktop: JdbcSqliteDriver (file-based SQLite)
- * - iOS: NativeSqliteDriver
- * - Web: WebSqlDriver (via SQL.js WASM)
+ * Default implementation returns null - platform must provide the driver.
  */
 @InternalCloudSyncApi
-public expect class DatabaseDriverFactory {
-
-    /**
-     * Creates and configures the SQLDelight driver for the current platform.
-     */
-    public fun createDriver(): SqlDriver
-
-    /**
-     * Returns the database name.
-     */
-    public fun databaseName(): String
+public open class DatabaseDriverFactory {
+    public open fun createDriver(): SqlDriver? = null
+    public open fun databaseName(): String = "cloudsync.db"
 }
-
-/**
- * Database configuration options.
- */
-public data class DatabaseConfig(
-    val name: String = "cloudsync.db",
-    val inMemory: Boolean = false,
-    val maxSizeBytes: Long = 50 * 1024 * 1024, // 50 MB
-    val walModeEnabled: Boolean = true,
-    val foreignKeysEnabled: Boolean = true
-)
