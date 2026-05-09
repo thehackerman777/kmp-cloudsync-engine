@@ -21,8 +21,9 @@ public class PayloadSerializer(
         return json.encodeToString(value)
     }
 
-    public fun <reified T> deserialize(payload: String): T {
-        return json.decodeFromString(payload)
+    public fun <T> deserialize(payload: String): T {
+        @Suppress("UNCHECKED_CAST")
+        return json.decodeFromString(payload) as T
     }
 
     public fun byteSize(payload: String): Long {
