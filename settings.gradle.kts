@@ -11,6 +11,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://jitpack.io")
+        mavenLocal()
     }
 }
 
@@ -25,5 +26,7 @@ include(
     ":sync",
     ":storage",
     ":presentation",
-    ":engine"
+    ":engine",
+    ":samples:android-app",
+    ":samples:desktop-app"
 )

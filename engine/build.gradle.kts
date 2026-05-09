@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
+    id("maven-publish")
 }
 
 kotlin {
@@ -60,7 +61,24 @@ android {
     }
 }
 
-// Desktop: Fat/Shadow JAR
+// ---- Publishing ----
+publishing {
+    repositories {
+        mavenLocal()
+    }
+
+    publications {
+        withType<MavenPublication> {
+            pom {
+                name.set("KMP CloudSync Engine")
+                description.set("KMP CloudSync Engine - Multiplatform sync library")
+                url.set("https://github.com/cloudsync/kmp-cloudsync-engine")
+            }
+        }
+    }
+}
+
+// ---- Desktop: Fat/Shadow JAR ----
 val fatDesktopJar by tasks.registering(Jar::class) {
     group = "distribution"
     description = "Build a fat JAR for Desktop bundling all runtime dependencies"
@@ -84,7 +102,44 @@ val fatDesktopJar by tasks.registering(Jar::class) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-// JS: Webpack production bundle (single UMD file)
+// ---- Fat AAR (all dependencies bundled into AAR structure) ----
+val fatAAR by tasks.registering(Zip::class) {
+    group = "distribution"
+    description = "Build a fat AAR bundling all runtime dependencies (classes.jar + deps)"
+
+    dependsOn("assembleRelease")
+
+    val aarInput = file("build/outputs/aar/engine-release.aar")
+    val outputAar = file("build/outputs/aar/engine-fat-release.aar")
+
+    from({
+        if (aarInput.exists()) {
+            zipTree(aarInput)
+        } else {
+            fileTree("/dev/null")
+        }
+    })
+
+    from({
+        project.configurations.getByName("releaseRuntimeClasspath")
+            .filter { it.name.endsWith(".jar") }
+            .map { if (it.isFile) project.zipTree(it) else it }
+    })
+
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    exclude("META-INF/MANIFEST.MF")
+
+    archiveFileName.set("engine-fat-release.aar")
+    destinationDirectory.set(file("build/outputs/aar"))
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    doLast {
+        println("Fat AAR built: " + outputAar.absolutePath + " (" + (outputAar.length() / 1024) + "KB)")
+    }
+}
+
+// ---- JS: Webpack production bundle ----
 tasks.register("jsWebBundle") {
     group = "distribution"
     description = "Build a single-file UMD JS bundle via webpack"
@@ -97,7 +152,7 @@ tasks.register("jsWebBundle") {
 
         val webpackDir = File(project.buildDir, "kotlin-webpack/js/productionExecutable")
         if (!webpackDir.exists()) {
-            throw GradleException("Webpack output not found: " + webpackDir.absolutePath)
+            throw GradleException("No webpack output: " + webpackDir.absolutePath)
         }
 
         val bundleFiles = webpackDir.listFiles()
@@ -128,16 +183,16 @@ tasks.register("jsWebBundle") {
     }
 }
 
-// Aggregate task
+// ---- Aggregate task ----
 tasks.register("buildAllArtifacts") {
     group = "distribution"
     description = "Build all platform artifacts (Android AAR, Desktop Shadow JAR, JS bundle)"
-    dependsOn("fatDesktopJar", "jsWebBundle")
+    dependsOn("fatDesktopJar", "jsWebBundle", "publishToMavenLocal")
 
     doLast {
         println("All artifacts built:")
         println("   Desktop: " + project.buildDir + "/libs/kmp-cloudsync-engine-desktop-0.2.0-all.jar")
-        println("   Web:     " + project.buildDir + "/outputs/js/kmp-cloudsync-engine.js")
-        println("   Android: assembleRelease - build/outputs/aar/")
+        println("   Web:     " + project.buildDir + "/outputs/js/")
+        println("   Android: build/outputs/aar/engine-fat-release.aar")
     }
 }

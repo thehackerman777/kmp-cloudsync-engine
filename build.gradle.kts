@@ -9,6 +9,12 @@ plugins {
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kotlin.atomicfu) apply false
+    kotlin("android") version "2.1.0" apply false
+}
+
+subprojects {
+    group = "io.cloudsync"
+    version = rootProject.version
 }
 
 val dokka by tasks.registering(org.jetbrains.dokka.gradle.DokkaTask::class) {

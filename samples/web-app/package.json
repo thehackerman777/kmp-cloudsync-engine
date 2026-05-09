@@ -1,0 +1,13 @@
+{
+  "name": "kmp-cloudsync-web-sample",
+  "version": "1.0.0",
+  "description": "Web sample consuming CloudSync Engine UMD bundle",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js",
+    "test": "node -e \"const mod = require('../../engine/build/outputs/js/engine.js'); const CSE = mod.io.cloudsync.engine.CloudSyncEngine; const engine = CSE.Companion.create('{}'); engine.start(); console.log('State:', engine.getState()); engine.stop(); console.log('JS bundle OK!');\""
+  },
+  "dependencies": {
+    "kmp-cloudsync-engine": "file:../../engine/build/outputs/js"
+  }
+}
