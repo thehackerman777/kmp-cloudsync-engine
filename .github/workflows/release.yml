@@ -8,6 +8,7 @@ on:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
+  ANDROID_HOME: /usr/local/lib/android/sdk
 
 jobs:
   validate:
@@ -59,6 +60,8 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null 2>&1 || true
       - name: Build Android modules
         run: ./gradlew :engine:assembleRelease --no-daemon
       - name: Build Fat AAR
