@@ -69,12 +69,7 @@ jobs:
           echo "sdk.dir=\$ANDROID_HOME" >> local.properties
           cat local.properties
       - name: Build Android AAR
-        run: |
-          ./gradlew :engine:compileReleaseKotlinAndroid --no-daemon --info 2>&1 || true
-          echo "--- Trying assemble now ---"
-          ./gradlew :engine:assembleRelease --stacktrace --no-daemon 2>&1 | tail -20
-      - name: Build Fat AAR
-        run: ./gradlew :engine:fatAar --no-daemon
+        run: ./gradlew :engine:assembleRelease --no-daemon
       - name: Validate Android artifact
         run: |
           AAR_FILE=$(find engine/build/outputs -name "*.aar" 2>/dev/null | head -1)
@@ -82,13 +77,12 @@ jobs:
             echo "❌ FATAL: No Android AAR artifact generated!"
             exit 1
           fi
-          echo "✅ Android AAR found: $AAR_FILE ($(du -h "$AAR_FILE" | cut -f1))"
-          echo "ARTIFACT_PATH=$AAR_FILE" >> $GITHUB_ENV
+          echo "✅ Android AAR: $AAR_FILE ($(du -h "$AAR_FILE" | cut -f1))"
       - name: Upload Android AAR
         uses: actions/upload-artifact@v4
         with:
           name: android-artifact
-          path: engine/build/outputs/fat-aar/*.aar
+          path: engine/build/outputs/aar/*.aar
           retention-days: 90
 
   build-desktop:
