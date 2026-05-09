@@ -88,10 +88,10 @@ val fatDesktopJar by tasks.registering(Jar::class) {
 // build/outputs/aar/engine-release.aar contiene el modulo
 // y sus dependencias transitivas via POM.
 
-// ── JS: Standalone bundle (single JS from library) ───────
+// ── JS: Library entry point bundle ───────────────────────
 tasks.register("jsWebBundle") {
     group = "distribution"
-    description = "Copy the main JS library entry to outputs/js/"
+    description = "Copy the main JS library entry point to outputs/js/"
 
     dependsOn("jsNodeProductionLibraryDistribution")
 
@@ -99,26 +99,32 @@ tasks.register("jsWebBundle") {
         val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        // La librería genera archivos en build/dist/js/productionLibrary/
         val libDir = File(project.buildDir, "dist/js/productionLibrary")
+        if (!libDir.exists()) throw GradleException("JS library output not found: ${libDir.absolutePath}")
 
-        if (!libDir.exists()) {
-            throw GradleException("JS library distribution not found: ${libDir.absolutePath}")
-        }
-
-        // Copiar solo el entry point principal (el JS más grande suele ser el bundle)
         val jsFiles = libDir.listFiles { f -> f.extension == "js" }?.toList() ?: emptyList()
         if (jsFiles.isEmpty()) throw GradleException("No JS files in library output")
 
-        // El archivo principal: el que tiene el nombre del proyecto raíz
-        val mainJs = jsFiles.firstOrNull { it.name.startsWith("kmp-cloudsync-engine") && !it.name.contains("-") }
-            ?: jsFiles.maxByOrNull { it.length() }
+        jsFiles.forEach { println("   📄 ${it.name} (${it.length() / 1024}KB)") }
+
+        // El entry point principal es el que tiene el nombre del módulo raíz (engine)
+        // y NO contiene guiones (no es un sub-módulo)
+        val mainJs = jsFiles.firstOrNull { it.name == "engine.js" }
+            ?: jsFiles.firstOrNull { it.name.startsWith(rootProject.name) && it.name.count { c -> c == '-' } <= 1 }
+            ?: jsFiles.firstOrNull { it.name == "${rootProject.name}.js" }
+            ?: jsFiles.filter { !it.name.startsWith("kotlin-") && !it.name.startsWith("org_") }.maxByOrNull { it.length() }
             ?: jsFiles.first()
 
-        mainJs.copyTo(File(outputDir, "kmp-cloudsync-engine-web.js"), overwrite = true)
+        // También incluir package.json para que sea un bundle funcional
+        val pkgJson = File(libDir, "package.json")
+        if (pkgJson.exists()) {
+            pkgJson.copyTo(File(outputDir, "package.json"), overwrite = true)
+            println("   📄 package.json incluido")
+        }
 
-        println("✅ Web JS bundle: ${outputDir.absolutePath}/kmp-cloudsync-engine-web.js")
-        println("   Source: ${mainJs.name} (${mainJs.length() / 1024}KB)")
+        mainJs.copyTo(File(outputDir, "kmp-cloudsync-engine-web.js"), overwrite = true)
+        println("✅ Web JS entry: ${outputDir.absolutePath}/kmp-cloudsync-engine-web.js (${mainJs.length() / 1024}KB)")
+        println("   Source: ${mainJs.name}")
     }
 }
 
