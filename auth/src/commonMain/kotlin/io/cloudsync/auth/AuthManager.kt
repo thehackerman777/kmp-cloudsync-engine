@@ -93,7 +93,7 @@ public class AuthManager(
      * Refreshes the access token explicitly.
      */
     public suspend fun refreshToken(): Result<Unit> = runCatching {
-        val refreshToken = tokenProvider.getRefreshToken()
+        val refreshToken = tokenProvider.getRefreshToken()?.value
             ?: throw IllegalStateException("No refresh token available")
         val tokenResponse = oAuth2Client.refreshAccessToken(refreshToken)
         tokenProvider.storeTokens(tokenResponse)
