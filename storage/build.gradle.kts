@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -26,7 +25,6 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
             }
         }

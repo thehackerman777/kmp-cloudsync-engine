@@ -25,7 +25,6 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
                 implementation(libs.turbine)
             }

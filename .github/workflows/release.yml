@@ -121,7 +121,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
       - name: Build JS modules
-        run: ./gradlew :engine:jsBrowserProductionWebpack --no-daemon
+        run: ./gradlew :engine:jsNodeProductionLibraryDistribution --no-daemon
       - name: Bundle JS standalone
         run: ./gradlew :engine:jsStandaloneBundle --no-daemon
       - name: Validate JS artifact

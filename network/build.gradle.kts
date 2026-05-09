@@ -32,7 +32,6 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.mock)
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
             }
         }

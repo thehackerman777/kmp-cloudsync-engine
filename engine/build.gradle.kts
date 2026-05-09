@@ -10,11 +10,7 @@ kotlin {
     }
     jvm("desktop")
     js(IR) {
-        browser {
-            webpackTask {
-                outputFileName = "kmp-cloudsync-engine.js"
-            }
-        }
+        browser()
         nodejs()
         binaries.library()
     }
@@ -38,8 +34,8 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
+                implementation(project(":core:common"))
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
             }
         }
@@ -185,39 +181,37 @@ tasks.register("fatAar") {
 // ── JS: Standalone bundle ─────────────────────────────────
 tasks.register("jsStandaloneBundle") {
     group = "distribution"
-    description = "Pack JS distribution files into a single standalone bundle"
+    description = "Copy the production library JS distribution to outputs/js"
 
-    dependsOn(":engine:jsBrowserProductionWebpack")
+    dependsOn("jsNodeProductionLibraryDistribution")
 
     doLast {
         val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        // Kotlin/JS IR with library mode outputs to productionLibrary
         val libDir = File(project.buildDir, "dist/js/productionLibrary")
-        val execDir = File(project.buildDir, "dist/js/productionExecutable")
 
-        val sourceDir = when {
-            libDir.exists() -> libDir
-            execDir.exists() -> execDir
-            else -> throw GradleException("JS output directory not found")
+        if (!libDir.exists()) {
+            throw GradleException("JS library output not found: ${libDir.absolutePath}")
         }
 
         copy {
-            from(sourceDir) {
+            from(libDir) {
                 include("*.js")
-                include("*.map")
+                include("*.js.map")
             }
             into(outputDir)
         }
 
         val jsFiles = outputDir.listFiles { f -> f.name.endsWith(".js") } ?: emptyArray()
         if (jsFiles.isEmpty()) {
-            throw GradleException("No JS files found after build")
+            throw GradleException("No JS files found after library build")
         }
 
-        println("✅ JS bundle ready at: ${outputDir.absolutePath}")
-        jsFiles.forEach { println("   ${it.name} (${it.length() / 1024} KB)") }
+        println("✅ JS library distribution ready at: ${outputDir.absolutePath}")
+        println("   Total files: ${jsFiles.size} JS files")
+        val totalSize = jsFiles.sumOf { it.length() } / 1024
+        println("   Total size: ${totalSize} KB")
     }
 }
 
