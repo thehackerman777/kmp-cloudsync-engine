@@ -10,13 +10,9 @@ kotlin {
     }
     jvm("desktop")
     js(IR) {
-        browser() {
-            webpackTask {
-                outputFileName = "kmp-cloudsync-engine-web.js"
-            }
-        }
+        browser()
         nodejs()
-        binaries.executable()
+        binaries.library()
     }
 
     sourceSets {
@@ -92,33 +88,37 @@ val fatDesktopJar by tasks.registering(Jar::class) {
 // build/outputs/aar/engine-release.aar contiene el modulo
 // y sus dependencias transitivas via POM.
 
-// ── JS: Webpack single bundle ────────────────────────────
+// ── JS: Standalone bundle (single JS from library) ───────
 tasks.register("jsWebBundle") {
     group = "distribution"
-    description = "Generate a single JS bundle for web"
+    description = "Copy the main JS library entry to outputs/js/"
 
-    dependsOn("jsBrowserProductionWebpack")
+    dependsOn("jsNodeProductionLibraryDistribution")
 
     doLast {
         val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        // Buscar el JS generado por webpack recursivamente
-        val distDir = File(project.buildDir, "dist")
-        val jsFiles = distDir.walkTopDown()
-            .filter { it.extension == "js" && it.parentFile.name != "kotlin" }
-            .toList()
+        // La librería genera archivos en build/dist/js/productionLibrary/
+        val libDir = File(project.buildDir, "dist/js/productionLibrary")
 
-        if (jsFiles.isEmpty()) {
-            throw GradleException("Webpack JS output not found in ${distDir.absolutePath}")
+        if (!libDir.exists()) {
+            throw GradleException("JS library distribution not found: ${libDir.absolutePath}")
         }
 
-        jsFiles.forEach { file ->
-            val target = File(outputDir, "kmp-cloudsync-engine-web.js")
-            file.copyTo(target, overwrite = true)
-            println("✅ Web JS bundle: ${target.absolutePath} (${target.length() / 1024}KB)")
-            return@doLast
-        }
+        // Copiar solo el entry point principal (el JS más grande suele ser el bundle)
+        val jsFiles = libDir.listFiles { f -> f.extension == "js" }?.toList() ?: emptyList()
+        if (jsFiles.isEmpty()) throw GradleException("No JS files in library output")
+
+        // El archivo principal: el que tiene el nombre del proyecto raíz
+        val mainJs = jsFiles.firstOrNull { it.name.startsWith("kmp-cloudsync-engine") && !it.name.contains("-") }
+            ?: jsFiles.maxByOrNull { it.length() }
+            ?: jsFiles.first()
+
+        mainJs.copyTo(File(outputDir, "kmp-cloudsync-engine-web.js"), overwrite = true)
+
+        println("✅ Web JS bundle: ${outputDir.absolutePath}/kmp-cloudsync-engine-web.js")
+        println("   Source: ${mainJs.name} (${mainJs.length() / 1024}KB)")
     }
 }
 

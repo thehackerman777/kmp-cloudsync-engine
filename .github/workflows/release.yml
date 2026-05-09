@@ -123,25 +123,18 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build JS webpack bundle
-        run: ./gradlew :engine:jsBrowserProductionWebpack --no-daemon
-      - name: Locate and rename JS bundle
+      - name: Build JS library bundle
+        run: ./gradlew :engine:jsWebBundle --no-daemon
+      - name: Validate JS artifact
         run: |
-          mkdir -p engine/build/outputs/js
-          JS_FILE=$(find engine/build/dist -name "*.js" 2>/dev/null | head -1)
-          if [ -z "$JS_FILE" ]; then
-            echo "🔍 Searching broader..."
-            JS_FILE=$(find engine/build -name "*.js" -not -path "*/tmp/*" -not -path "*/reports/*" -not -path "*/kotlin/*" 2>/dev/null | head -5)
-            echo "Found: $JS_FILE"
-          fi
-          if [ -z "$JS_FILE" ]; then
-            echo "❌ FATAL: No Web JS bundle generated!"
-            find engine/build -type f -name "*.js" 2>/dev/null | head -20
+          JS_FILE="engine/build/outputs/js/kmp-cloudsync-engine-web.js"
+          if [ ! -f "$JS_FILE" ] || [ ! -s "$JS_FILE" ]; then
+            echo "❌ FATAL: Web JS bundle is missing or empty!"
+            find engine/build/outputs/js -type f -ls 2>/dev/null
             exit 1
           fi
-          cp "$JS_FILE" engine/build/outputs/js/kmp-cloudsync-engine-web.js
-          echo "JS_PATH=engine/build/outputs/js/kmp-cloudsync-engine-web.js" >> $GITHUB_ENV
-          echo "✅ Web JS bundle: engine/build/outputs/js/kmp-cloudsync-engine-web.js ($(du -h engine/build/outputs/js/kmp-cloudsync-engine-web.js | cut -f1))"
+          echo "JS_PATH=$JS_FILE" >> $GITHUB_ENV
+          echo "✅ Web JS bundle: $JS_FILE ($(du -h "$JS_FILE" | cut -f1))"
       - name: Upload JS bundle
         uses: actions/upload-artifact@v4
         with:
