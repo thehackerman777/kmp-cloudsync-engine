@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0}
-.container{max-width:900px;margin:0 auto;padding:24px}
+.container{max-width:960px;margin:0 auto;padding:24px}
 h1{font-size:1.8rem;font-weight:700;margin-bottom:4px}
 .sub{color:#94a3b8;font-size:.9rem;margin-bottom:24px}
 .sub a{color:#38bdf8}
@@ -18,135 +18,221 @@ h1{font-size:1.8rem;font-weight:700;margin-bottom:4px}
 .st.ready{background:#166534;color:#86efac}
 .st.sync{background:#1e40af;color:#93c5fd}
 .st.err{background:#7f1d1d;color:#fca5a5}
-.grp{display:flex;gap:8px;flex-wrap:wrap}
-.btn{padding:10px 20px;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer}
+.grp{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;transition:.2s}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.pri{background:#2563eb;color:white}
+.btn.pri{background:#2563eb;color:#fff}
 .btn.pri:hover:not(:disabled){background:#1d4ed8}
-.btn.suc{background:#16a34a;color:white}
+.btn.suc{background:#16a34a;color:#fff}
 .btn.suc:hover:not(:disabled){background:#15803d}
-.btn.dan{background:#dc2626;color:white}
+.btn.dan{background:#dc2626;color:#fff}
 .btn.dan:hover:not(:disabled){background:#b91c1c}
+.btn.warn{background:#d97706;color:#fff}
+.btn.warn:hover:not(:disabled){background:#b45309}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .grid label{color:#94a3b8;font-size:.8rem;display:block}
 .grid val{font-size:.9rem;font-weight:500}
-.log-box{background:#0f172a;border-radius:8px;padding:12px;font-family:"Fira Code",monospace;font-size:.8rem;max-height:300px;overflow-y:auto;white-space:pre-wrap;line-height:1.5}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;color:#94a3b8;font-size:.8rem;padding:8px 4px;border-bottom:1px solid #334155}
+td{padding:8px 4px;border-bottom:1px solid #1e293b;vertical-align:middle}
+td input{background:#0f172a;border:1px solid #334155;border-radius:4px;color:#e2e8f0;padding:6px 8px;width:100%;font-size:.85rem;font-family:monospace}
+td input:focus{outline:2px solid #2563eb;outline-offset:-2px}
+.vb{padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.vb.local{background:#854d0e;color:#fde68a}
+.vb.remote{background:#1e40af;color:#93c5fd}
+.vb.synced{background:#166534;color:#86efac}
+.vb.conflict{background:#7f1d1d;color:#fca5a5}
+.log-box{background:#0f172a;border-radius:8px;padding:12px;font-family:"Fira Code",monospace;font-size:.8rem;max-height:250px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;margin-top:8px}
 .l{padding:2px 0;border-bottom:1px solid #1e293b}
 .bdg{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;margin-right:4px}
 .bdg.ok{background:#166534;color:#86efac}
 .bdg.info{background:#1e40af;color:#93c5fd}
 .bdg.err{background:#7f1d1d;color:#fca5a5}
 .bdg.warn{background:#854d0e;color:#fde68a}
+.sb{display:flex;gap:16px;align-items:center;padding:8px 0;color:#94a3b8;font-size:.85rem}
+.sb span{display:flex;align-items:center;gap:4px}
 </style>
 </head>
 <body>
 <div class="container">
-<h1>&#x2601;&#xFE0F; CloudSync Engine</h1>
-<p class="sub">Web Demo &mdash; Mode: <strong>MOCK</strong> (no Google credentials) &middot; <a href="https://github.com/thehackerman777/kmp-cloudsync-engine">GitHub</a></p>
+<h1>☁️ CloudSync Engine <span style="font-size:.8rem;font-weight:400;color:#94a3b8">Web Demo</span></h1>
+<p class="sub">Mode: <strong>MOCK</strong> (no Google credentials) · <a href="https://github.com/thehackerman777/kmp-cloudsync-engine">GitHub</a> · <a href="downloads/kmp-cloudsync-android.apk">Android APK</a> · <a href="downloads/kmp-cloudsync-desktop.jar">Desktop JAR</a></p>
+
 <div class="card">
-<h2>&#x1F4E1; Engine Status</h2>
-<p id="statusDisplay"><span class="st idle">&#x26AA; Not initialized</span></p>
-<div class="grid">
-<div><label>State</label><val id="stateVal">&mdash;</val></div>
-<div><label>User ID</label><val id="userIdVal">&mdash;</val></div>
-<div><label>Provider</label><val id="provVal">&mdash;</val></div>
-<div><label>Auth</label><val id="authVal">&mdash;</val></div>
-</div>
-</div>
-<div class="card">
-<h2>&#x1F3AE; Controls</h2>
+<h2>📡 Engine</h2>
 <div class="grp">
-<button class="btn pri" id="btnInit" onclick="initEngine()">&#x1F680; Init + Mock Auth</button>
-<button class="btn suc" id="btnSync" onclick="syncNow()" disabled>&#x1F504; Sync Now</button>
-<button class="btn dan" id="btnStop" onclick="stopEngine()" disabled>&#x23F9; Stop</button>
+<button class="btn pri" id="btnInit" onclick="initEngine()">🚀 Init Engine</button>
+<button class="btn suc" id="btnSync" onclick="syncNow()" disabled>🔄 Sync Now</button>
+<button class="btn warn" id="btnConflict" onclick="simConflict()" disabled>⚔️ Sim Conflict</button>
+<button class="btn dan" id="btnStop" onclick="stopEngine()" disabled>⏹ Stop</button>
+</div>
+<div class="sb">
+<span>State: <strong id="stateVal">IDLE</strong></span>
+<span>User: <strong id="userIdVal">-</strong></span>
+<span>Provider: <strong id="provVal">-</strong></span>
+<span>Auth: <strong id="authVal">-</strong></span>
 </div>
 </div>
+
 <div class="card">
-<h2>&#x1F4CB; Configurations</h2>
-<div id="configList" style="color:#94a3b8;font-size:0.9rem">Initialize engine to see configs.</div>
+<h2>📋 Configuration Editor</h2>
+<p style="color:#94a3b8;font-size:.85rem;margin-bottom:12px">Edit values and click "Sync Now" to simulate cloud sync</p>
+<table id="cfgTable">
+<thead><tr><th>Key</th><th>Value</th><th>Status</th></tr></thead>
+<tbody>
+<tr>
+<td><input type="text" value="theme" id="k0"></td>
+<td><input type="text" value="dark" id="v0"></td>
+<td><span class="vb local" id="s0">📡 LOCAL</span></td>
+</tr>
+<tr>
+<td><input type="text" value="language" id="k1"></td>
+<td><input type="text" value="es" id="v1"></td>
+<td><span class="vb local" id="s1">📡 LOCAL</span></td>
+</tr>
+<tr>
+<td><input type="text" value="fontSize" id="k2"></td>
+<td><input type="text" value="16" id="v2"></td>
+<td><span class="vb local" id="s2">📡 LOCAL</span></td>
+</tr>
+</tbody>
+</table>
+<p style="color:#94a3b8;font-size:.85rem;margin-top:8px">💡 On Android/Desktop: same configs. Real cross-device sync needs Google Cloud OAuth setup.</p>
 </div>
+
 <div class="card">
-<h2>&#x1F4DC; Activity Log</h2>
+<h2>📜 Activity Log</h2>
 <div class="log-box" id="log"><div class="l">Web demo loaded. Click Init to start.</div></div>
 </div>
 </div>
 <script src="engine.js"></script>
 <script>
-var engine=null;
-function log(m,t){
- var e=document.getElementById("log"),time=new Date().toLocaleTimeString();
- var b=t=="ok"?'<span class="bdg ok">&#x2705;</span>':t=="err"?'<span class="bdg err">&#x274C;</span>':t=="warn"?'<span class="bdg warn">&#x26A0;</span>':'<span class="bdg info">&#x2139;</span>';
- e.innerHTML='<div class="l">['+time+'] '+b+' '+m+'</div>'+e.innerHTML;
+var engine = null;
+var cfgs = [
+ {k:"theme",v:"dark",synced:false},
+ {k:"language",v:"es",synced:false},
+ {k:"fontSize",v:"16",synced:false}
+];
+
+function log(m,t) {
+ var e = document.getElementById("log");
+ var time = new Date().toLocaleTimeString();
+ var badge = t === "ok" ? '<span class="bdg ok">&#10003;</span>' : 
+             t === "err" ? '<span class="bdg err">&#10007;</span>' : 
+             t === "warn" ? '<span class="bdg warn">&#9888;</span>' : 
+             '<span class="bdg info">&#8505;</span>';
+ e.innerHTML = '<div class="l">['+time+'] '+badge+' '+m+'</div>' + e.innerHTML;
 }
-function upStat(text,cls){
- document.getElementById("statusDisplay").innerHTML='<span class="st '+cls+'">'+text+'</span>';
+
+function readCfgs() {
+ for (var i = 0; i < cfgs.length; i++) {
+  var ki = document.getElementById("k"+i);
+  var vi = document.getElementById("v"+i);
+  if (ki && vi) { cfgs[i].k = ki.value; cfgs[i].v = vi.value; }
+ }
 }
-function upInfo(state,uid,prov,auth){
- document.getElementById("stateVal").textContent=state||'\u2014';
- document.getElementById("userIdVal").textContent=uid?uid.substring(0,16)+'...':'\u2014';
- document.getElementById("provVal").textContent=prov||'\u2014';
- document.getElementById("authVal").textContent=auth||'\u2014';
+
+function updBadge(i) {
+ var el = document.getElementById("s"+i);
+ if (!el) return;
+ el.className = "vb " + (cfgs[i].synced ? "synced" : "local");
+ el.textContent = cfgs[i].synced ? "\u2705 SYNCED" : "\uD83D\uDCE1 LOCAL";
 }
-function btns(init,sync,stop){
- document.getElementById("btnInit").disabled=!init;
- document.getElementById("btnSync").disabled=!sync;
- document.getElementById("btnStop").disabled=!stop;
+
+function updAllBadges() {
+ for (var i = 0; i < cfgs.length; i++) updBadge(i);
 }
-function showCfgs(c){
- var e=document.getElementById("configList");
- if(!c||!c.length){e.innerHTML='<span style="color:#94a3b8">No configs.</span>';return;}
- e.innerHTML=c.map(function(x){
-  var i=x.synced?'&#x2705;':'&#x23F3;';
-  return '<div style="padding:6px 0;border-bottom:1px solid #334155;display:flex;justify-content:space-between"><span>'+i+' '+x.id+' <span style="color:#64748b">v'+x.version+'</span></span><span style="color:#94a3b8;font-size:0.85rem">'+x.namespace+'</span></div>';
- }).join('');
+
+function refreshLocalStorage() {
+ try {
+  var stored = localStorage.getItem("cloudsync_mock_configs");
+  if (stored) {
+   var parsed = JSON.parse(stored);
+   if (Array.isArray(parsed) && parsed.length === cfgs.length) {
+    cfgs = parsed;
+    for (var i = 0; i < cfgs.length; i++) {
+     var ki = document.getElementById("k"+i);
+     var vi = document.getElementById("v"+i);
+     if (ki) ki.value = cfgs[i].k;
+     if (vi) vi.value = cfgs[i].v;
+    }
+    updAllBadges();
+    log("Configs loaded from local storage","info");
+   }
+  }
+ } catch(e) {}
 }
-async function initEngine(){
- log('Initializing with MOCK mode...','info');
- upStat('Initializing...','sync');
- btns(false,false,false);
- try{
-  var cfg=JSON.stringify({configName:'web-demo',serverUrl:'https://www.googleapis.com',mode:'mock'});
-  engine=CloudSyncEngine.configure(cfg);
+
+function saveToLocalStorage() {
+ readCfgs();
+ try { localStorage.setItem("cloudsync_mock_configs", JSON.stringify(cfgs)); } catch(e) {}
+}
+
+async function initEngine() {
+ log("Initializing CloudSync Engine (MOCK)...","info");
+ try {
+  var cfg = JSON.stringify({configName:"web-demo",serverUrl:"https://www.googleapis.com",mode:"mock"});
+  engine = CloudSyncEngine.configure(cfg);
   engine.initialize(cfg);
-  log('Engine initialized.','ok');
-  upStat('Initialized (MOCK)','ready');
-  upInfo('IDLE','mock-user-web','MOCK (Google Drive)','Mock Auth');
-  btns(false,true,true);
-  log('Ready! No Google credentials needed.','ok');
-  showCfgs([{id:'pref-theme',namespace:'app-settings',version:1,synced:false},{id:'pref-lang',namespace:'app-settings',version:1,synced:false},{id:'backup-db',namespace:'data',version:3,synced:true}]);
- }catch(e){
-  log('Error: '+e.message,'err');
-  upStat('Error: '+e.message,'err');
-  btns(true,false,false);
+  log("Engine initialized.","ok");
+  
+  document.getElementById("stateVal").textContent = "IDLE";
+  document.getElementById("userIdVal").textContent = "mock-user-"+Math.random().toString(36).slice(2,6);
+  document.getElementById("provVal").textContent = "MOCK (Google Drive)";
+  document.getElementById("authVal").textContent = "Mock Auth";
+  document.getElementById("btnInit").disabled = true;
+  document.getElementById("btnSync").disabled = false;
+  document.getElementById("btnConflict").disabled = false;
+  document.getElementById("btnStop").disabled = false;
+  
+  refreshLocalStorage();
+  
+  log("Ready! Edit configs and click Sync.","ok");
+  log("Configs persist in browser localStorage between sessions.","warn");
+ } catch(e) {
+  log("Error: "+e.message,"err");
  }
 }
-async function syncNow(){
- if(!engine){log('Not initialized!','err');return;}
- log('Syncing...','info');
- upStat('Syncing...','sync');
- btns(false,false,true);
- try{
+
+async function syncNow() {
+ readCfgs();
+ log("Syncing "+cfgs.length+" configs...","info");
+ try {
   engine.syncNow();
-  log('Sync completed (MOCK mode).','ok');
-  upStat('Synced','ready');
-  showCfgs([{id:'pref-theme',namespace:'app-settings',version:2,synced:true},{id:'pref-lang',namespace:'app-settings',version:2,synced:true},{id:'backup-db',namespace:'data',version:3,synced:true}]);
-  btns(false,true,true);
- }catch(e){
-  log('Error: '+e.message,'err');
-  upStat('Sync failed','err');
-  btns(false,true,true);
+  for (var i = 0; i < cfgs.length; i++) cfgs[i].synced = true;
+  updAllBadges();
+  saveToLocalStorage();
+  log("Sync completed. All configs synced.","ok");
+  log("In production, these would sync to Google Drive appDataFolder.","warn");
+ } catch(e) {
+  log("Error: "+e.message,"err");
  }
 }
-async function stopEngine(){
- if(!engine)return;
- engine.stop();
- engine=null;
- log('Engine stopped.','ok');
- upStat('Stopped','idle');
- upInfo('\u2014','\u2014','\u2014','\u2014');
- btns(true,false,false);
+
+function simConflict() {
+ readCfgs();
+ var i = Math.floor(Math.random() * cfgs.length);
+ cfgs[i].synced = false;
+ var el = document.getElementById("s"+i);
+ if (el) { el.className = "vb conflict"; el.textContent = "\u2694 CONFLICT"; }
+ log("Conflict on '"+cfgs[i].k+"' (remote version is newer)","warn");
 }
-log('Web demo loaded.','info');
+
+async function stopEngine() {
+ if (!engine) return;
+ engine.stop();
+ engine = null;
+ log("Engine stopped.","ok");
+ document.getElementById("stateVal").textContent = "STOPPED";
+ document.getElementById("btnInit").disabled = false;
+ document.getElementById("btnSync").disabled = true;
+ document.getElementById("btnConflict").disabled = true;
+ document.getElementById("btnStop").disabled = true;
+ for (var i = 0; i < cfgs.length; i++) cfgs[i].synced = false;
+ updAllBadges();
+}
+
+log("CloudSync Web Demo loaded. Click Init to start.","info");
 </script>
 </body>
 </html>
