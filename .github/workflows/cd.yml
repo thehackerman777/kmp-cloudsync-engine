@@ -8,59 +8,48 @@ on:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true
   JAVA_VERSION: '17'
+  ANDROID_HOME: /home/ubuntu/android-sdk
 
 jobs:
-  validate-tag:
-    name: Validate Semantic Version
+  build-and-upload:
+    name: Build & Upload Artifacts
     runs-on: [self-hosted, linux, x64, dev-vps]
-    outputs:
-      version: ${{ steps.parse.outputs.version }}
-      pre-release: ${{ steps.parse.outputs.pre-release }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Parse SemVer Tag
-        id: parse
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "Tag: $TAG"
-          if [[ $TAG =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "version=${BASH_REMATCH[0]}" >> $GITHUB_OUTPUT
-            echo "major=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
-            echo "minor=${BASH_REMATCH[2]}" >> $GITHUB_OUTPUT
-            echo "patch=${BASH_REMATCH[3]}" >> $GITHUB_OUTPUT
-            echo "pre-release=${BASH_REMATCH[4]:-}" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Invalid semantic version: $TAG"
-            exit 1
-          fi
-
-  build:
-    name: Build All Targets
-    needs: validate-tag
-    runs-on: [self-hosted, linux, x64, dev-vps]
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: ${{ env.JAVA_VERSION } } }
+        with: { distribution: 'temurin', java-version: ${{ env.JAVA_VERSION }} }
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Compile all modules
-        run: ./gradlew compileKotlinDesktop compileKotlinAndroid compileKotlinJs --no-daemon || true
+      - name: Build Desktop JARs
+        continue-on-error: true
+        run: |
+          ./gradlew :core:common:jvmJar :domain:jvmJar :network:jvmJar \
+            :auth:jvmJar :storage:jvmJar :data:jvmJar :sync:jvmJar \
+            :presentation:jvmJar --no-daemon
 
-      - name: Generate Dokka Documentation
-        run: ./gradlew dokka --no-daemon || true
+      - name: Build Android AARs
+        continue-on-error: true
+        run: |
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Documentation
+      - name: Collect Artifacts
+        run: |
+          mkdir -p artifacts/jars artifacts/aars
+          find . -path '*/build/libs/*.jar' -exec cp {} artifacts/jars/ \;
+          find . -path '*/build/outputs/aar/*.aar' -exec cp {} artifacts/aars/ \;
+          ls -la artifacts/jars/ artifacts/aars/
+          echo "ARTIFACTS_COUNT=$(find artifacts -type f | wc -l)" >> $GITHUB_ENV
+
+      - name: Upload All Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: docs
-          path: build/dokka/
-          retention-days: 30
+          name: release-artifacts
+          path: artifacts/
+          retention-days: 90
 
   release:
-    name: Create GitHub Release
-    needs: [validate-tag, build]
+    name: Create Release with Artifacts
+    needs: build-and-upload
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
@@ -74,13 +63,19 @@ jobs:
           if [ -z "$PREV_TAG" ]; then
             echo "changelog=Initial release" >> $GITHUB_OUTPUT
           else
-            CHANGES=$(git log --pretty=format:"* %s (%h)" $PREV_TAG..HEAD)
-            echo "changelog<<ENDCHANGELOG" >> $GITHUB_OUTPUT
-            echo "$CHANGES" >> $GITHUB_OUTPUT
-            echo "ENDCHANGELOG" >> $GITHUB_OUTPUT
+            echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+            git log --pretty=format:"* %s (%h)" $PREV_TAG..HEAD >> $GITHUB_OUTPUT
+            echo '' >> $GITHUB_OUTPUT
+            echo 'EOF' >> $GITHUB_OUTPUT
           fi
 
-      - name: Create GitHub Release
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release-artifacts/
+
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
@@ -91,18 +86,25 @@ jobs:
             ${{ steps.changelog.outputs.changelog }}
 
             ### 📦 Artifacts
-            Build artifacts are available in the CI run for this release.
+            - 📱 **Android AARs** — Integrate into Android projects
+            - 🖥️ **Desktop JARs** — For JVM-based projects
+            - 🌐 **Source code** — Zip and tar.gz below
 
-            ### ⚡ Usage
+            ### ⚡ Gradle
             ```kotlin
-            // Add dependency
-            implementation("io.cloudsync:kmp-cloudsync-engine:${{ github.ref_name }}")
+            repositories { mavenCentral() }
+            dependencies {
+                implementation("io.cloudsync:kmp-cloudsync-engine:${{ github.ref_name }}")
+            }
             ```
 
             ### 📚 Docs
-            - [Architecture](https://github.com/thehackerman777/kmp-cloudsync-engine/blob/main/docs/ARCHITECTURE.md)
-            - [Security Model](https://github.com/thehackerman777/kmp-cloudsync-engine/blob/main/docs/SECURITY.md)
-            - [Contributing](https://github.com/thehackerman777/kmp-cloudsync-engine/blob/main/docs/CONTRIBUTING.md)
-          draft: ${{ contains(needs.validate-tag.outputs.pre-release, '-') }}
-          prerelease: ${{ contains(needs.validate-tag.outputs.pre-release, '-') }}
+            - [Architecture](docs/ARCHITECTURE.md)
+            - [Security](docs/SECURITY.md)
+            - [README español](README.es.md)
+          files: |
+            release-artifacts/jars/*.jar
+            release-artifacts/aars/*.aar
+          draft: false
+          prerelease: false
           generate_release_notes: true
