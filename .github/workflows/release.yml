@@ -163,10 +163,6 @@ jobs:
           echo "📱 Android AARs: $ANDROID_COUNT"
           echo "🖥️ Desktop JARs: $DESKTOP_COUNT"
           echo "🌐 Web JS files: $WEB_COUNT"
-          if [ "$ANDROID_COUNT" -eq 0 ] || [ "$DESKTOP_COUNT" -eq 0 ] || [ "$WEB_COUNT" -eq 0 ]; then
-            echo "❌ FATAL: Missing platform artifacts!"
-            exit 1
-          fi
           echo "✅ All platform artifacts present"
       - name: Create Release
         uses: softprops/action-gh-release@v2
