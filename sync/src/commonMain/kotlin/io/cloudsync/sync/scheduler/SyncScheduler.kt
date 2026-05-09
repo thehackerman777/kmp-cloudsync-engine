@@ -4,6 +4,7 @@ import io.cloudsync.sync.SyncOrchestrator
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Background sync scheduler with configurable intervals and
