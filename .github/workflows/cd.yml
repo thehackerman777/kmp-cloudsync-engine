@@ -1,5 +1,7 @@
 name: CD — Continuous Delivery
 
+name: CD — Continuous Delivery
+
 on:
   push:
     tags:
