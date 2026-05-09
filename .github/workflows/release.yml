@@ -127,17 +127,33 @@ jobs:
         run: ./gradlew :engine:jsWebBundle --no-daemon
       - name: Bundle JS con esbuild (single file)
         run: |
+          set +e
           npm init -y > /dev/null 2>&1
-          npx esbuild@0.25 engine/build/outputs/js/engine.js \
-            --bundle \
-            --outfile=engine/build/outputs/js/kmp-cloudsync-engine-web.js \
-            --platform=browser \
-            --format=iife \
-            --global-name=CloudSyncEngine \
-            --external:node:* \
-            2>&1 || echo "⚠️ esbuild falló, intentando con webpack..."
+          echo "📂 Archivos JS disponibles:"
+          ls -la engine/build/outputs/js/*.js 2>/dev/null || echo "(no hay JS)"
+          
+          # Buscar el entry point principal (el más grande que no sea kotlin-*)
+          ENTRY=$(ls -S engine/build/outputs/js/*.js 2>/dev/null | grep -v kotlin- | grep -v node_modules | head -1)
+          echo "🔍 Entry point: $ENTRY"
+          
+          if [ -n "$ENTRY" ]; then
+            echo "🚀 Ejecutando esbuild..."
+            npx esbuild@0.25 "$ENTRY" \
+              --bundle \
+              --outfile=engine/build/outputs/js/kmp-cloudsync-engine-web.js \
+              --platform=browser \
+              --format=iife \
+              --global-name=CloudSyncEngine \
+              --allow-overwrite \
+              2>&1
+            ESBUILD_EXIT=\$?
+            echo "esbuild exit code: $ESBUILD_EXIT"
+          fi
+          set -e
       - name: Validate JS bundle
         run: |
+          echo "=== Verificando bundle ==="
+          ls -la engine/build/outputs/js/kmp-cloudsync-engine-web.js 2>/dev/null || echo "(no existe)"
           JS_FILE="engine/build/outputs/js/kmp-cloudsync-engine-web.js"
           if [ -f "$JS_FILE" ] && [ -s "$JS_FILE" ]; then
             echo "JS_PATH=$JS_FILE" >> $GITHUB_ENV
