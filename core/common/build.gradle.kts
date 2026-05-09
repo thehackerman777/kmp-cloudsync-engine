@@ -11,17 +11,6 @@ kotlin {
         }
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "CloudSyncCore"
-            isStatic = true
-        }
-    }
-
     jvm("desktop")
     js(IR) {
         browser()
@@ -51,7 +40,7 @@ kotlin {
 
         val androidMain by getting
         val desktopMain by getting
-        val iosX64Main by getting
+        val jsMain by getting
     }
 }
 

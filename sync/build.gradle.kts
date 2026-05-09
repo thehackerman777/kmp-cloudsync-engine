@@ -9,9 +9,6 @@ kotlin {
     androidTarget {
         compilations.all { kotlinOptions { jvmTarget = "17" } }
     }
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
-        it.binaries.framework { baseName = "CloudSyncSync"; isStatic = true }
-    }
     jvm("desktop")
     js(IR) { browser(); nodejs() }
 
@@ -42,6 +39,7 @@ kotlin {
         }
         val androidMain by getting
         val desktopMain by getting
+        val jsMain by getting
     }
 }
 
