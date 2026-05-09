@@ -23,7 +23,6 @@ stately = "2.1.0"
 multiplatformSettings = "1.2.0"
 security-crypto = "1.1.0-alpha06"
 bouncycastle = "1.78.1"
-shadow = "8.3.5"
 
 [libraries]
 # Kotlin
@@ -84,4 +83,3 @@ dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 binary-compatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binary-compatibility" }
 kotlin-atomicfu = { id = "org.jetbrains.kotlin.plugin.atomicfu", version.ref = "kotlin" }
-shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadow" }

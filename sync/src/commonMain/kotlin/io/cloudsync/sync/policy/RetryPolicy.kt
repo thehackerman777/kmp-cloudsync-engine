@@ -48,7 +48,7 @@ public class RetryPolicy(
         }
 
         var lastError: SyncResult<Unit> = SyncResult.success(Unit)
-        var attempt = attempts.getOrDefault(operationName, 0)
+        var attempt = attempts[operationName] ?: 0
 
         while (attempt < maxRetries) {
             try {
@@ -70,7 +70,7 @@ public class RetryPolicy(
                 )
             }
 
-            attempt++
+            attempt += 1
             attempts[operationName] = attempt
 
             if (attempt < maxRetries) {

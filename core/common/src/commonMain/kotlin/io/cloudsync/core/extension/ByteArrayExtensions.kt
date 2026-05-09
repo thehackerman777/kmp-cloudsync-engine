@@ -35,6 +35,15 @@ public expect fun ByteArray.crc32(): Long
 public fun Long.toHumanReadableSize(): String = when {
     this < 1024 -> "$this B"
     this < 1024 * 1024 -> "${this / 1024} KB"
-    this < 1024 * 1024 * 1024 -> "%.1f MB".format(this.toDouble() / (1024 * 1024))
-    else -> "%.2f GB".format(this.toDouble() / (1024 * 1024 * 1024))
+    this < 1024L * 1024 * 1024 -> "${formatWithDecimals(this.toDouble() / (1024 * 1024), 1)} MB"
+    else -> "${formatWithDecimals(this.toDouble() / (1024 * 1024 * 1024), 2)} GB"
+}
+
+/** Cross-platform decimal formatter. */
+private fun formatWithDecimals(value: Double, decimals: Int): String {
+    val factor = when (decimals) { 1 -> 10; 2 -> 100; else -> 1000 }
+    val scaled = (value * factor).toLong()
+    val intPart = scaled / factor
+    val decPart = (scaled % factor).toInt()
+    return "$intPart.${decPart.toString().padStart(decimals, '0')}"
 }

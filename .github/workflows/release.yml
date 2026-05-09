@@ -93,7 +93,7 @@ jobs:
       - name: Build Desktop modules
         run: ./gradlew :engine:compileKotlinDesktop --no-daemon
       - name: Build Shadow JAR
-        run: ./gradlew :engine:shadowDesktopJar --no-daemon
+        run: ./gradlew :engine:fatDesktopJar --no-daemon
       - name: Validate Desktop artifact
         run: |
           JAR_FILE=$(find engine/build/libs -name "*.jar" 2>/dev/null | head -1)

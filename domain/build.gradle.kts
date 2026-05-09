@@ -24,7 +24,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(project(":core:testing"))
                 implementation(libs.kotlin.coroutines.test)
                 implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)

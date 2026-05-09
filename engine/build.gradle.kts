@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.shadow)
 }
 
 kotlin {
@@ -23,7 +22,6 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Re-export all internal modules via api for transitive consumption
                 api(project(":core:common"))
                 api(project(":domain"))
                 api(project(":data"))
@@ -61,26 +59,31 @@ android {
     }
 }
 
-// ── Desktop: Shadow JAR ──────────────────────────────────
-tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowDesktopJar") {
+// ── Desktop: Fat/Shadow JAR ──────────────────────────────
+val fatDesktopJar by tasks.registering(Jar::class) {
     group = "distribution"
-    description = "Build a fat/shadow JAR for Desktop bundling all dependencies"
+    description = "Build a fat JAR for Desktop bundling all runtime dependencies"
 
-    dependsOn(":engine:desktopMainClasses")
+    dependsOn("desktopMainClasses")
 
-    from(project.extensions.getByType(org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension::class)
-        .targets.getByName("desktop")
-        .compilations.getByName("main")
-        .output.allOutputs)
+    // Include compiled desktop classes
+    from({ kotlin.targets.getByName("desktop").compilations.getByName("main").output.allOutputs })
 
-    configurations.add(project.configurations.getByName("desktopRuntimeClasspath"))
+    // Include all runtime dependencies
+    from({
+        project.configurations.getByName("desktopRuntimeClasspath")
+            .filter { it.name.endsWith(".jar") }
+            .map { if (it.isFile) project.zipTree(it) else it }
+    })
+
+    // Exclude signature files
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 
     archiveBaseName.set("kmp-cloudsync-engine-desktop")
     archiveVersion.set(project.version.toString())
     archiveClassifier.set("all")
 
-    mergeServiceFiles()
-    minimize()
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 // ── Android: Fat AAR ─────────────────────────────────────
@@ -101,121 +104,81 @@ tasks.register("fatAar") {
     )
 
     doLast {
-        val buildDir = layout.buildDirectory.get().asFile
-        val outputDir = File(buildDir, "fat-aar")
-        val classesDir = File(outputDir, "classes")
-        val resDir = File(outputDir, "res")
-        val jniDir = File(outputDir, "jni")
+        val rootDir = project.rootDir
+        val engineAar = File(rootDir, "engine/build/outputs/aar/engine-release.aar")
 
-        outputDir.deleteRecursively()
-        outputDir.mkdirs()
+        if (!engineAar.exists()) {
+            throw GradleException("Engine AAR not found: ${engineAar.absolutePath}")
+        }
 
-        // Collect all dependency AARs
-        val engineAar = File(
-            buildDir.parentFile.parentFile,
-            "engine/build/outputs/aar/engine-release.aar"
-        )
-
-        val dependencyAars = listOf(
+        val depAars = listOf(
             "core/common", "domain", "data", "network",
             "auth", "storage", "sync", "presentation"
         ).map { module ->
-            File(
-                buildDir.parentFile.parentFile,
-                "$module/build/outputs/aar/${module.replace("/", "-")}-release.aar"
-            )
+            val path = module.replace("/", "-")
+            File(rootDir, "$module/build/outputs/aar/${path}-release.aar")
         }.filter { it.exists() }
 
-        val allAars = listOf(engineAar) + dependencyAars
+        val outputFile = File(project.buildDir, "outputs/fat-aar/kmp-cloudsync-engine-android-${project.version}.aar")
+        outputFile.parentFile.mkdirs()
 
-        // Extract all AARs into the merged directory
+        val mergeDir = File(project.buildDir, "fat-aar-merge")
+        mergeDir.deleteRecursively()
+        mergeDir.mkdirs()
+
+        // Extract all AARs
+        val allAars = listOf(engineAar) + depAars
         allAars.forEach { aar ->
-            if (aar.exists()) {
-                copy {
-                    from(zipTree(aar))
-                    into(classesDir)
-                    include("classes.jar")
-                    rename("classes.jar", "classes-${aar.parentFile.parentFile.name}.jar")
-                }
-                copy {
-                    from(zipTree(aar))
-                    into(classesDir)
-                    include("libs/*.jar")
-                }
-                copy {
-                    from(zipTree(aar))
-                    into(resDir)
-                    include("res/**")
-                }
-                copy {
-                    from(zipTree(aar))
-                    into(jniDir)
-                    include("jni/**")
-                }
+            val moduleName = aar.parentFile.parentFile.name
+            copy {
+                from(project.zipTree(aar))
+                into(File(mergeDir, moduleName))
             }
         }
 
-        // Merge all class jars into a single classes.jar
-        val mergedJar = File(classesDir, "classes.jar")
-        val jars = classesDir.listFiles()?.filter {
-            it.name.endsWith(".jar") && it.name != "classes.jar"
-        } ?: emptyList()
-        if (jars.isNotEmpty()) {
-            val classFiles = mutableListOf<File>()
-            jars.forEach { jar ->
+        // Merge classes.jar files
+        val mergedClasses = File(mergeDir, "merged-classes")
+        mergedClasses.mkdirs()
+        allAars.forEach { aar ->
+            val aarDir = File(mergeDir, aar.parentFile.parentFile.name)
+            val classesJar = File(aarDir, "classes.jar")
+            if (classesJar.exists()) {
                 copy {
-                    from(zipTree(jar))
-                    into(File(classesDir, "merged"))
+                    from(project.zipTree(classesJar))
+                    into(mergedClasses)
                     exclude("META-INF/MANIFEST.MF")
                     exclude("META-INF/*.SF")
                     exclude("META-INF/*.DSA")
                     exclude("META-INF/*.RSA")
                 }
-                classFiles.addAll(File(classesDir, "merged").walkTopDown().filter { it.extension == "class" }.toList())
-            }
-
-            // Re-jar as classes.jar
-            ant.withGroovyBuilder {
-                "jar"("destfile" to mergedJar.absolutePath, "basedir" to "${classesDir.absolutePath}/merged")
-            }
-
-            // Cleanup
-            jars.forEach { it.delete() }
-            File(classesDir, "merged").deleteRecursively()
-        }
-
-        // Build the fat AAR
-        val fatAarDir = File(buildDir, "outputs/fat-aar")
-        fatAarDir.mkdirs()
-        val fatAarFile = File(fatAarDir, "kmp-cloudsync-engine-android-${project.version}.aar")
-
-        // We need the base AAR structure from engine module
-        val baseAarDir = File(buildDir, "fat-aar-base")
-        baseAarDir.deleteRecursively()
-        baseAarDir.mkdirs()
-
-        // Copy the engine AAR as base, replace its classes.jar
-        copy {
-            from(zipTree(engineAar))
-            into(baseAarDir)
-            exclude("classes.jar")
-            exclude("META-INF/MANIFEST.MF")
-        }
-        if (mergedJar.exists()) {
-            copy {
-                from(mergedJar)
-                into(baseAarDir)
             }
         }
 
-        // Create the fat AAR
+        // Re-jar as classes.jar
+        val finalClassesJar = File(mergeDir, "classes.jar")
         ant.withGroovyBuilder {
-            "zip"("destfile" to fatAarFile.absolutePath) {
-                "fileset"("dir" to baseAarDir.absolutePath)
+            "jar"("destfile" to finalClassesJar.absolutePath, "basedir" to mergedClasses.absolutePath)
+        }
+
+        // Build final AAR from engine AAR structure + merged classes.jar
+        val aarBase = File(mergeDir, "aar-base")
+        copy {
+            from(project.zipTree(engineAar))
+            into(aarBase)
+            exclude("classes.jar")
+        }
+        copy {
+            from(finalClassesJar)
+            into(aarBase)
+        }
+
+        ant.withGroovyBuilder {
+            "zip"("destfile" to outputFile.absolutePath) {
+                "fileset"("dir" to aarBase.absolutePath)
             }
         }
 
-        println("📦 Fat AAR created: ${fatAarFile.absolutePath}")
+        println("✅ Fat AAR created: ${outputFile.absolutePath} (${outputFile.length() / 1024} KB)")
     }
 }
 
@@ -227,30 +190,34 @@ tasks.register("jsStandaloneBundle") {
     dependsOn(":engine:jsBrowserProductionWebpack")
 
     doLast {
-        val distDir = layout.buildDirectory.dir("dist/js").get().asFile
-        val outputDir = layout.buildDirectory.dir("outputs/js").get().asFile
+        val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        val sourceDir = layout.buildDirectory.dir("dist/js/productionLibrary").get().asFile
-        if (sourceDir.exists()) {
-            copy {
-                from(sourceDir)
-                into(outputDir)
-                include("*.js")
-            }
-            println("📦 JS bundle ready at: ${outputDir.absolutePath}")
-        } else {
-            // Fallback: use webpack output
-            val webpackDir = layout.buildDirectory.dir("dist/js/productionExecutable").get().asFile
-            if (webpackDir.exists()) {
-                copy {
-                    from(webpackDir)
-                    into(outputDir)
-                    include("*.js")
-                }
-                println("📦 JS webpack bundle ready at: ${outputDir.absolutePath}")
-            }
+        // Kotlin/JS IR with library mode outputs to productionLibrary
+        val libDir = File(project.buildDir, "dist/js/productionLibrary")
+        val execDir = File(project.buildDir, "dist/js/productionExecutable")
+
+        val sourceDir = when {
+            libDir.exists() -> libDir
+            execDir.exists() -> execDir
+            else -> throw GradleException("JS output directory not found")
         }
+
+        copy {
+            from(sourceDir) {
+                include("*.js")
+                include("*.map")
+            }
+            into(outputDir)
+        }
+
+        val jsFiles = outputDir.listFiles { f -> f.name.endsWith(".js") } ?: emptyArray()
+        if (jsFiles.isEmpty()) {
+            throw GradleException("No JS files found after build")
+        }
+
+        println("✅ JS bundle ready at: ${outputDir.absolutePath}")
+        jsFiles.forEach { println("   ${it.name} (${it.length() / 1024} KB)") }
     }
 }
 
@@ -258,12 +225,14 @@ tasks.register("jsStandaloneBundle") {
 tasks.register("buildAllArtifacts") {
     group = "distribution"
     description = "Build all platform artifacts (Android AAR, Desktop Shadow JAR, JS bundle)"
-    dependsOn(":engine:shadowDesktopJar", ":engine:fatAar", ":engine:jsStandaloneBundle")
+    dependsOn("fatDesktopJar", "fatAar", "jsStandaloneBundle")
 
     doLast {
-        println("✅ All artifacts built:")
-        println("   Desktop: build/libs/kmp-cloudsync-engine-desktop-${project.version}-all.jar")
-        println("   Android: build/outputs/fat-aar/kmp-cloudsync-engine-android-${project.version}.aar")
-        println("   Web:     build/outputs/js/")
+        println("""
+            |✅ All artifacts built:
+            |   Desktop: ${project.buildDir}/libs/kmp-cloudsync-engine-desktop-${project.version}-all.jar
+            |   Android: ${project.buildDir}/outputs/fat-aar/kmp-cloudsync-engine-android-${project.version}.aar
+            |   Web:     ${project.buildDir}/outputs/js/
+        """.trimMargin())
     }
 }
