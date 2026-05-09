@@ -35,7 +35,11 @@ kotlin {
                 implementation(libs.turbine)
             }
         }
-        val androidMain by getting
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.security.crypto)
+            }
+        }
         val desktopMain by getting
         val jsMain by getting
     }

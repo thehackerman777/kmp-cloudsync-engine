@@ -103,25 +103,22 @@ tasks.register("jsWebBundle") {
         val outputDir = File(project.buildDir, "outputs/js")
         outputDir.mkdirs()
 
-        val webpackDir = File(project.buildDir, "dist/js/productionExecutable")
+        // Buscar el JS generado por webpack recursivamente
+        val distDir = File(project.buildDir, "dist")
+        val jsFiles = distDir.walkTopDown()
+            .filter { it.extension == "js" && it.parentFile.name != "kotlin" }
+            .toList()
 
-        if (!webpackDir.exists()) {
-            throw GradleException("Webpack output not found: ${webpackDir.absolutePath}")
+        if (jsFiles.isEmpty()) {
+            throw GradleException("Webpack JS output not found in ${distDir.absolutePath}")
         }
 
-        copy {
-            from(webpackDir) {
-                include("*.js")
-            }
-            into(outputDir)
+        jsFiles.forEach { file ->
+            val target = File(outputDir, "kmp-cloudsync-engine-web.js")
+            file.copyTo(target, overwrite = true)
+            println("✅ Web JS bundle: ${target.absolutePath} (${target.length() / 1024}KB)")
+            return@doLast
         }
-
-        val jsFiles = outputDir.listFiles { f -> f.extension == "js" }?.toList() ?: emptyList()
-        val totalSize = (jsFiles.sumOf { it.length() } / 1024)
-
-        println("✅ Web JS bundle: ${outputDir.absolutePath}")
-        jsFiles.forEach { println("   📄 ${it.name} (${it.length() / 1024}KB)") }
-        println("   Total: ${totalSize}KB")
     }
 }
 
