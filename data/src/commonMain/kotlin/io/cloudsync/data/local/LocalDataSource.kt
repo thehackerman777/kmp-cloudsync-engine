@@ -39,13 +39,13 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
     }
 
     public fun observeAll(): Flow<List<Configuration>> {
-        return queries.selectAll().asFlow().mapToList(Dispatchers.IO).map { list ->
+        return queries.selectAll().asFlow().mapToList(Dispatchers.Default).map { list ->
             list.map { it.toDomain() }
         }
     }
 
     public fun observeByNamespace(namespace: String): Flow<List<Configuration>> {
-        return queries.selectByNamespace(namespace).asFlow().mapToList(Dispatchers.IO).map { list ->
+        return queries.selectByNamespace(namespace).asFlow().mapToList(Dispatchers.Default).map { list ->
             list.map { it.toDomain() }
         }
     }

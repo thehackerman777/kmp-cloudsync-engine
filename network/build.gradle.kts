@@ -8,9 +8,6 @@ kotlin {
     androidTarget {
         compilations.all { kotlinOptions { jvmTarget = "17" } }
     }
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
-        it.binaries.framework { baseName = "CloudSyncNetwork"; isStatic = true }
-    }
     jvm("desktop")
     js(IR) { browser(); nodejs() }
 
@@ -35,7 +32,6 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.mock)
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
             }
         }
@@ -44,6 +40,9 @@ kotlin {
         }
         val desktopMain by getting {
             dependencies { implementation(libs.ktor.client.cio) }
+        }
+        val jsMain by getting {
+            dependencies { implementation(libs.ktor.client.js) }
         }
     }
 }

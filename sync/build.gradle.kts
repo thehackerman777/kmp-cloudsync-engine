@@ -9,9 +9,6 @@ kotlin {
     androidTarget {
         compilations.all { kotlinOptions { jvmTarget = "17" } }
     }
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
-        it.binaries.framework { baseName = "CloudSyncSync"; isStatic = true }
-    }
     jvm("desktop")
     js(IR) { browser(); nodejs() }
 
@@ -32,16 +29,14 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(project(":core:testing"))
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
                 implementation(libs.turbine)
-                implementation(libs.mockk)
             }
         }
         val androidMain by getting
         val desktopMain by getting
+        val jsMain by getting
     }
 }
 

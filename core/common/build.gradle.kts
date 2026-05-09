@@ -11,17 +11,6 @@ kotlin {
         }
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "CloudSyncCore"
-            isStatic = true
-        }
-    }
-
     jvm("desktop")
     js(IR) {
         browser()
@@ -42,7 +31,6 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(libs.kotlin.coroutines.test)
-                implementation(libs.kotest.runner)
                 implementation(libs.kotest.assertions)
                 implementation(libs.kotest.property)
                 implementation(libs.turbine)
@@ -51,7 +39,7 @@ kotlin {
 
         val androidMain by getting
         val desktopMain by getting
-        val iosX64Main by getting
+        val jsMain by getting
     }
 }
 

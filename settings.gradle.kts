@@ -18,12 +18,12 @@ rootProject.name = "kmp-cloudsync-engine"
 
 include(
     ":core:common",
-    ":core:testing",
     ":domain",
     ":data",
     ":network",
     ":auth",
     ":sync",
     ":storage",
-    ":presentation"
+    ":presentation",
+    ":engine"
 )

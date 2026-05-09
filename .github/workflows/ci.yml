@@ -1,18 +1,8 @@
-name: CI — Continuous Integration
+name: CI — Pull Request Validation
 
 on:
-  push:
-    branches: [main, develop, 'release/**']
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'README.es.md'
   pull_request:
     branches: [main, develop]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'README.es.md
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -21,150 +11,49 @@ concurrency:
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true -Dorg.gradle.daemon=false
   JAVA_VERSION: '17'
-  ANDROID_HOME: /home/ubuntu/android-sdk
 
 jobs:
   lint:
-    name: Static Analysis & Lint
-    runs-on: [self-hosted, linux, x64, dev-vps]
+    name: Lint & Static Analysis
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-
-      - name: Run Detekt (Static Analysis)
-        continue-on-error: true
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Detekt
         run: ./gradlew detekt --no-daemon
-
-      - name: Run API check
-        continue-on-error: true
+      - name: API Check
         run: ./gradlew apiCheck --no-daemon
 
   test:
     name: Test Suite
-    needs: lint
-    runs-on: [self-hosted, linux, x64, dev-vps]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
+      - uses: gradle/actions/setup-gradle@v4
       - name: Run all tests
-        continue-on-error: true
         run: ./gradlew allTests --no-daemon
 
-      - name: Publish Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: '**/build/reports/tests/'
-          retention-days: 14
-
-  build-android:
-    name: Build Android AAR
-    needs: test
-    runs-on: [self-hosted, linux, x64, dev-vps]
+  build:
+    name: Compile All Targets
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build Android
-        continue-on-error: true
-        run: ./gradlew assembleDebug --no-daemon
-
-      - name: Upload Android AARs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-artifacts
-          path: '**/build/outputs/aar/'
-          retention-days: 7
-
-  build-desktop:
-    name: Build Desktop JAR
-    needs: test
-    runs-on: [self-hosted, linux, x64, dev-vps]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build Desktop
-        continue-on-error: true
-        run: ./gradlew jvmJar --no-daemon
-
-      - name: Upload Desktop JARs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-artifacts
-          path: '**/build/libs/'
-          retention-days: 7
-
-  build-web:
-    name: Build Web (JS)
-    needs: test
-    runs-on: [self-hosted, linux, x64, dev-vps]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Build JS
-        continue-on-error: true
-        run: ./gradlew jsMainClasses jsNodeProductionRun --no-daemon
-
-      - name: Upload JS Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-artifacts
-          path: '**/build/kotlin/'
-          retention-days: 7
-
-  quality-gate:
-    name: Quality Gate
-    needs: [lint, test, build-android, build-desktop, build-web]
-    runs-on: [self-hosted, linux, x64, dev-vps]
-    steps:
-      - name: Verify all checks
-        run: echo "✅ All builds and tests completed successfully — quality gate passed."
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile Android
+        run: ./gradlew :engine:compileReleaseKotlinAndroid --no-daemon
+      - name: Compile Desktop
+        run: ./gradlew :engine:compileKotlinDesktop --no-daemon
+      - name: Compile Web
+        run: ./gradlew :engine:jsBrowserProductionWebpack --no-daemon
