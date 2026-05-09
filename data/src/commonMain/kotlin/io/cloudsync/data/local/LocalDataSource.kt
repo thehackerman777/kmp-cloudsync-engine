@@ -123,3 +123,20 @@ public class LocalDataSource(private val database: CloudSyncDatabase) {
         save(resolution.resolved)
     }
 }
+
+
+private fun io.cloudsync.data.local.db.Configuration.toDomain(): io.cloudsync.domain.model.Configuration {
+    return io.cloudsync.domain.model.Configuration(
+        id = id,
+        namespace = namespace,
+        payload = payload,
+        version = version,
+        checksum = checksum,
+        updatedAt = updated_at,
+        createdAt = created_at,
+        synced = synced == 1L,
+        tags = emptyList(),
+        sizeBytes = size_bytes,
+        encrypted = encrypted == 1L
+    )
+}
