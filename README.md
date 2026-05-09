@@ -131,6 +131,91 @@ It uses **Google Drive's invisible `appDataFolder`** as the cloud backend, ensur
 
 ---
 
+---
+
+## 🏗️ Build Pipeline
+
+### Platform Artifacts
+
+| Artifact | Build Command | Output | Size |
+|----------|--------------|--------|------|
+| **Android AAR** | `./gradlew :engine:assembleRelease` | `engine/build/outputs/aar/engine-release.aar` | ~4KB (POM-mode) |
+| **Android Fat AAR** | `./gradlew :engine:fatAAR` | `engine/build/outputs/aar/engine-fat-release.aar` | full bundle |
+| **Desktop Fat JAR** | `./gradlew :engine:fatDesktopJar` | `engine/build/libs/*-desktop-*-all.jar` | ~21MB |
+| **JS UMD Bundle** | `./gradlew :engine:jsWebBundle` | `engine/build/outputs/js/engine.js` | ~101KB |
+| **All at once** | `./gradlew :engine:buildAllArtifacts` | — | — |
+| **MavenLocal** | `./gradlew :engine:publishToMavenLocal` | `~/.m2/repository/io/cloudsync/` | — |
+
+### Quick Reference
+
+```bash
+# Full build
+./scripts/build-all.sh
+
+# Publish to MavenLocal
+./scripts/publish-local.sh
+
+# Validate artifacts
+./scripts/validate-artifacts.sh
+```
+
+---
+
+## 📦 Samples
+
+Sample projects that consume the engine artifacts:
+
+### Desktop App (JVM Console)
+
+```bash
+./gradlew :samples:desktop-app:run
+```
+
+### Android App (Compose)
+
+```bash
+./gradlew :samples:android-app:assembleDebug
+```
+
+### Web App (JS)
+
+```bash
+node -e "const m = require(./engine/build/outputs/js/engine.js); const e = m.io.cloudsync.engine.CloudSyncEngine.Companion.create({}); e.start(); console.log(OK:, e.getState());"
+```
+
+---
+
+## 📚 Build Docs
+
+| Document | Description |
+|----------|-------------|
+| [Build Android](docs/BUILD-ANDROID.md) | How to consume the AAR |
+| [Build Desktop](docs/BUILD-DESKTOP.md) | How to consume the Fat JAR |
+| [Build Web](docs/BUILD-WEB.md) | How to consume the JS bundle |
+| [Release Checklist](docs/RELEASE-CHECKLIST.md) | Steps for a release |
+| [VPS Workflow](docs/VPS-WORKFLOW.md) | Complete VPS build workflow |
+
+---
+
+## 🖥️ VPS Build Environment
+
+**Server:** dev-vps (t3.large - 18.213.174.229)
+- **OS:** Ubuntu 24.04, **Java:** 21, **Node:** v22.22.2
+- **Android SDK:** API 34+35, build-tools 34.0.0
+- **SSH:** `ssh dev-vps`
+
+```bash
+ssh dev-vps
+cd ~/projects/kmp-cloudsync-engine
+./scripts/build-all.sh
+./scripts/validate-artifacts.sh
+./scripts/test-desktop.sh
+./scripts/test-web.sh
+```
+
+---
+
+
 ## 🚀 Quick Start
 
 ### 1. Add Dependency
