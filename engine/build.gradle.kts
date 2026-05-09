@@ -88,10 +88,10 @@ val fatDesktopJar by tasks.registering(Jar::class) {
 // build/outputs/aar/engine-release.aar contiene el modulo
 // y sus dependencias transitivas via POM.
 
-// ── JS: Library entry point bundle ───────────────────────
+// ── JS: Bundle distributable (copia toda la library) ─────
 tasks.register("jsWebBundle") {
     group = "distribution"
-    description = "Copy the main JS library entry point to outputs/js/"
+    description = "Copy the full JS library distribution to outputs/js/"
 
     dependsOn("jsNodeProductionLibraryDistribution")
 
@@ -102,29 +102,19 @@ tasks.register("jsWebBundle") {
         val libDir = File(project.buildDir, "dist/js/productionLibrary")
         if (!libDir.exists()) throw GradleException("JS library output not found: ${libDir.absolutePath}")
 
-        val jsFiles = libDir.listFiles { f -> f.extension == "js" }?.toList() ?: emptyList()
-        if (jsFiles.isEmpty()) throw GradleException("No JS files in library output")
-
-        jsFiles.forEach { println("   📄 ${it.name} (${it.length() / 1024}KB)") }
-
-        // El entry point principal es el que tiene el nombre del módulo raíz (engine)
-        // y NO contiene guiones (no es un sub-módulo)
-        val mainJs = jsFiles.firstOrNull { it.name == "engine.js" }
-            ?: jsFiles.firstOrNull { it.name.startsWith(rootProject.name) && it.name.count { c -> c == '-' } <= 1 }
-            ?: jsFiles.firstOrNull { it.name == "${rootProject.name}.js" }
-            ?: jsFiles.filter { !it.name.startsWith("kotlin-") && !it.name.startsWith("org_") }.maxByOrNull { it.length() }
-            ?: jsFiles.first()
-
-        // También incluir package.json para que sea un bundle funcional
-        val pkgJson = File(libDir, "package.json")
-        if (pkgJson.exists()) {
-            pkgJson.copyTo(File(outputDir, "package.json"), overwrite = true)
-            println("   📄 package.json incluido")
+        // Copiar TODO el contenido de la library (entry + módulos + package.json)
+        copy {
+            from(libDir)
+            into(outputDir)
         }
 
-        mainJs.copyTo(File(outputDir, "kmp-cloudsync-engine-web.js"), overwrite = true)
-        println("✅ Web JS entry: ${outputDir.absolutePath}/kmp-cloudsync-engine-web.js (${mainJs.length() / 1024}KB)")
-        println("   Source: ${mainJs.name}")
+        val fileCount = outputDir.listFiles()?.size ?: 0
+        val totalSize = (outputDir.walkTopDown().filter { it.isFile }.sumOf { it.length() } / 1024)
+        println("✅ JS library distribution copiada a: ${outputDir.absolutePath}")
+        println("   Archivos: $fileCount, Total: ${totalSize}KB")
+        outputDir.listFiles()?.sortedBy { it.name }?.forEach { f ->
+            println("   📄 ${f.name} (${f.length() / 1024}KB)")
+        }
     }
 }
 
